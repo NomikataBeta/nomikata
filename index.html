@@ -3052,18 +3052,7 @@
     "1日3回": ["朝昼夜"],
     "1日4回": ["朝昼晩夜"]
   };
-  const medicineNames = new Set(["Dolo", "Azee", "Clavam"]);
-
-  function updateMedicineList() {
-    const datalist = document.getElementById("medicineList");
-    datalist.innerHTML = "";
-    medicineNames.forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      datalist.appendChild(opt);
-    });
-  }
-
+  
   function createMedicineRow(copyData = null) {
     medCounter++;
     const medDiv = document.createElement('div');
@@ -3433,5 +3422,6 @@ document.getElementById("pdfBtn").addEventListener("click", () => {
 
 </body>
 </html>
+
 
 
