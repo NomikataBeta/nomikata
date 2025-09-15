@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>処方されたお薬の飲み方・使い方</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Japanese font -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+
+  <!-- html2pdf.js (for PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body { background-color: #f9f9f9; padding: 20px; font-family: 'Noto Sans JP', sans-serif; }
+    .prescription-box { background: white; padding: 20px; border-radius: 10px; }
+    .medication { border-bottom: 1px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
+    .medication-number { font-weight: bold; }
+    .dose-line label { display: none; }
+    .invalid-input { border-color: red !important; box-shadow: 0 0 5px red !important; }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2 class="text-center mb-4">処方されたお薬の飲み方・使い方</h2>
+
+  <div class="prescription-box" id="prescription">
+    <div id="medications"></div>
+    <button class="btn btn-secondary btn-sm no-print mt-3" id="addMed">＋ 薬を追加</button>
+  </div>
+
+  <div class="text-center mt-4 no-print">
+    <button class="btn btn-primary me-2" id="copyBtn">テキストをコピー</button>
+    <button class="btn btn-success" id="printBtn">印刷</button>
+    <button class="btn btn-danger ms-2" id="pdfBtn">PDF保存</button>
+  </div>
+</div>
+
+<datalist id="medicineList">
+  <option value="Dolo"></option>
+  <option value="Azee"></option>
+  <option value="Clavam"></option>
+</datalist>
+
+<script>
+  let medCounter = 0;
+  const frequencyOptions = {
+    "1日1回": ["朝のみ", "昼のみ", "夜のみ"],
+    "1日2回": ["朝と夜", "朝と昼", "昼と夜"],
+    "1日3回": ["朝昼夜"],
+    "1日4回": ["朝昼晩夜"]
+  };
+  const medicineNames = new Set(["Dolo", "Azee", "Clavam"]);
+
+  function updateMedicineList() {
+    const datalist = document.getElementById("medicineList");
+    datalist.innerHTML = "";
+    medicineNames.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      datalist.appendChild(opt);
+    });
+  }
+
+  function createMedicineRow(copyData = null) {
+    medCounter++;
+    const medDiv = document.createElement('div');
+    medDiv.className = 'medication';
+
+    medDiv.innerHTML = `
+      <div class="medication-number">${medCounter}.</div>
+      <div class="mb-2">
+        <input type="text" class="form-control med-name" placeholder="薬の名前" list="medicineList">
+      </div>
+      <div class="mb-2 d-flex align-items-center gap-2">
+        <div style="flex: 1;">
+          <select class="form-control med-type">
+            <option value="">薬の種類</option>
+            <option>抗生剤</option><option>抗ウィルス剤</option><option>解熱鎮痛剤</option><option>痛み止め</option>
+            <option>抗炎症剤</option><option>抗アレルギー剤</option><option>咳止め</option>
+            <option>カルシウム用</option><option>鼻詰まり用</option><option>風邪用</option>
+            <option>整腸剤</option><option>目薬</option><option>筋弛緩剤</option><option>高血圧症治療薬</option>
+            <option>塗り薬</option><option>保湿剤</option><option>ローション</option><option>シャンプー</option>
+            <option>糖尿病治療薬</option><option>ビタミン剤</option><option>点鼻薬</option><option>その他</option>
+          </select>
+          <input type="text" class="form-control med-type-other mt-2" placeholder="薬の種類を入力してください" style="display:none;">
+        </div>
+        <div class="form-check">
+          <input class="form-check-input med-prn" type="checkbox">
+          <label class="form-check-label">頓服用</label>
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <select class="form-control med-form">
+          <option value="">薬の形状を選択</option>
+          <option value="tablet">錠剤</option>
+          <option value="syrup">シロップ</option>
+          <option value="drops">点眼/点耳</option>
+          <option value="spray">スプレー</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+
+      <div class="mb-2 d-flex flex-wrap gap-2 align-items-center dose-line">
+        <div id="dose-container" style="flex: 1 1 180px;"></div>
+        <select class="form-control med-frequency frequency-select" style="flex: 1 1 130px;">
+          <option value="">頻度</option>
+          <option>1日1回</option><option>1日2回</option><option>1日3回</option><option>1日4回</option>
+        </select>
+        <select class="form-control med-time time-detail-select" disabled style="flex: 1 1 130px;">
+          <option>服用タイミング</option>
+        </select>
+        <select class="form-control med-foodtiming" style="flex: 1 1 120px;">
+          <option value="">食前/後</option><option>食前後いつでも</option><option>食前</option><option>食後</option>
+        </select>
+        <input type="number" class="form-control med-duration-num" min="1" inputmode="numeric" placeholder="日数" style="flex: 1 1 60px;">
+        <select class="form-control med-duration-type" style="flex: 1 1 80px;">
+          <option value="">期間</option><option value="日間">日間</option><option value="週間">週間</option><option value="ヶ月間">ヶ月間</option>
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">※</label>
+        <select class="form-control med-note">
+          <option value="">選択してください</option>
+          <option>熱が37.5度以上がある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>患部のところにお使い下さい。</option>
+          <option>体の痛みがある場合だけお飲みください。続けてむ場合は6時間程お空け下さい。</option>
+          <option>患部の痛みがある場合だけお飲みください。続けてむ場合は6時間程お空け下さい。</option>
+          <option>頭痛がある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>熱が37.5度以上や体の痛みや頭痛がある場合お飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>患部の痛みがある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>お水を混ぜて飲み始めてください。</option>
+          <option>Suspension Syrup薬の作り方手順：数回たたいて粉末をほぐし、沸騰させて冷やした水を加え、線まで水を加えて、ボトルを閉める。　ボトルを閉めて良く振り、均一にする。</option>
+          <option>患部の所だけにお塗りください。</option>
+        </select>
+      </div>
+
+      <div class="mb-2"><textarea class="form-control med-memo" rows="2" placeholder="メモ"></textarea></div>
+      <button class="btn btn-danger btn-sm btn-remove no-print">× 削除</button>
+      <button class="btn btn-info btn-sm btn-duplicate no-print">コピー</button>
+    `;
+
+    document.getElementById('medications').appendChild(medDiv);
+
+    const doseContainer = medDiv.querySelector('#dose-container');
+    const formSelect = medDiv.querySelector('.med-form');
+    const typeSelect = medDiv.querySelector('.med-type');
+    const typeOtherInput = medDiv.querySelector('.med-type-other');
+    const freqSelect = medDiv.querySelector('.frequency-select');
+    const timeSelect = medDiv.querySelector('.time-detail-select');
+
+    formSelect.addEventListener('change', () => updateDoseFields(formSelect, doseContainer));
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === "その他") {
+        typeOtherInput.style.display = "block";
+      } else {
+        typeOtherInput.style.display = "none";
+        typeOtherInput.value = "";
+      }
+    });
+
+    freqSelect.addEventListener('change', () => {
+      const options = frequencyOptions[freqSelect.value] || [];
+      timeSelect.innerHTML = "";
+      if (options.length) {
+        timeSelect.disabled = false;
+        options.forEach(opt => {
+          const o = document.createElement('option');
+          o.text = opt; timeSelect.add(o);
+        });
+      } else {
+        timeSelect.disabled = true;
+        timeSelect.innerHTML = "<option>服用タイミング</option>";
+      }
+    });
+
+    medDiv.querySelector('.btn-remove').addEventListener('click', () => {
+      medDiv.remove(); renumberMeds();
+    });
+    medDiv.querySelector('.btn-duplicate').addEventListener('click', () => duplicateMedicine(medDiv));
+
+    if (copyData) {
+      medDiv.querySelector('.med-name').value = copyData.name || "";
+      medDiv.querySelector('.med-type').value = copyData.type || "";
+      medDiv.querySelector('.med-type').dispatchEvent(new Event('change'));
+      if (copyData.type === "その他") medDiv.querySelector('.med-type-other').value = copyData.typeOther || "";
+      medDiv.querySelector('.med-prn').checked = !!copyData.prn;
+      formSelect.value = copyData.form || "";
+      formSelect.dispatchEvent(new Event('change'));
+      const doseEl = medDiv.querySelector('.med-dose');
+      if (doseEl) {
+        doseEl.value = copyData.doseOther ?? copyData.dose ?? "";
+      }
+      const areaEl = medDiv.querySelector('.med-dose-area');
+      if (areaEl) areaEl.value = copyData.area || "";
+      medDiv.querySelector('.frequency-select').value = copyData.freq || "";
+      medDiv.querySelector('.frequency-select').dispatchEvent(new Event('change'));
+      medDiv.querySelector('.time-detail-select').value = copyData.time || "";
+      medDiv.querySelector('.med-foodtiming').value = copyData.foodTiming || "";
+      medDiv.querySelector('.med-duration-num').value = copyData.durationNum || "";
+      medDiv.querySelector('.med-duration-type').value = copyData.durationType || "";
+      medDiv.querySelector('.med-note').value = copyData.note || "";
+      medDiv.querySelector('.med-memo').value = copyData.memo || "";
+    }
+
+    const medNameInput = medDiv.querySelector('.med-name');
+    medNameInput.addEventListener("change", () => {
+      const val = medNameInput.value.trim();
+      if (val && !medicineNames.has(val)) {
+        medicineNames.add(val); updateMedicineList();
+      }
+    });
+  }
+
+  function updateDoseFields(formSelect, doseContainer) {
+    doseContainer.innerHTML = '';
+    if (formSelect.value === 'tablet') {
+      doseContainer.innerHTML = `<select class="form-control med-dose"><option value="">用量を選択</option><option>1回1錠</option><option>1回半錠</option></select>`;
+    } else if (formSelect.value === 'syrup') {
+      doseContainer.innerHTML = `<div class="input-group"><span class="input-group-text">1回</span><input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric"><span class="input-group-text">ml</span></div>`;
+    } else if (formSelect.value === 'drops' || formSelect.value === 'spray') {
+      const label = formSelect.value === 'drops' ? 'ドロップ' : 'スプレー';
+      doseContainer.innerHTML = `
+        <div class="input-group mb-1">
+          <span class="input-group-text">1回</span>
+          <input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric">
+          <span class="input-group-text">${label}</span>
+        </div>
+        <select class="form-control med-dose-area">
+          <option>両目</option><option>左目</option><option>右目</option>
+          <option>両耳</option><option>左耳</option><option>右耳</option>
+          <option>両鼻</option><option>左鼻</option><option>右鼻</option>
+        </select>`;
+    } else if (formSelect.value === 'other') {
+      doseContainer.innerHTML = `<input type="text" class="form-control med-dose" placeholder="用量を入力してください">`;
+    } else {
+      doseContainer.innerHTML = '';
+    }
+  }
+
+  function duplicateMedicine(medDiv) {
+    const data = {
+      name: medDiv.querySelector('.med-name').value,
+      type: medDiv.querySelector('.med-type').value,
+      typeOther: medDiv.querySelector('.med-type-other')?.value || "",
+      prn: medDiv.querySelector('.med-prn').checked,
+      form: medDiv.querySelector('.med-form').value,
+      dose: medDiv.querySelector('.med-dose')?.value || "",
+      doseOther: medDiv.querySelector('.med-dose')?.value || "",
+      area: medDiv.querySelector('.med-dose-area')?.value || "",
+      freq: medDiv.querySelector('.frequency-select').value,
+      time: medDiv.querySelector('.time-detail-select').value,
+      foodTiming: medDiv.querySelector('.med-foodtiming').value,
+      durationNum: medDiv.querySelector('.med-duration-num').value,
+      durationType: medDiv.querySelector('.med-duration-type').value,
+      note: medDiv.querySelector('.med-note').value,
+      memo: medDiv.querySelector('.med-memo').value
+    };
+    createMedicineRow(data);
+  }
+
+  function renumberMeds() {
+    const numbers = document.querySelectorAll('.medication-number');
+    numbers.forEach((el, i) => el.textContent = (i + 1) + '.');
+    medCounter = numbers.length;
+  }
+
+  function validateMeds() {
+    let allValid = true;
+    document.querySelectorAll('.medication').forEach(med => {
+      med.classList.remove('incomplete');
+      const prn = med.querySelector('.med-prn')?.checked;
+      const nameVal = med.querySelector('.med-name')?.value.trim();
+      if (!nameVal) { med.classList.add('incomplete'); allValid = false; return; }
+      if (prn) return;
+    });
+    return allValid;
+  }
+
+  function buildText() {
+    let text = "処方されたお薬の飲み方・使い方\n\n";
+    document.querySelectorAll('.medication').forEach((med, idx) => {
+      const name = med.querySelector('.med-name').value.trim();
+      if (!name) return;
+
+      let type = med.querySelector('.med-type').value.trim();
+      const typeOtherEl = med.querySelector('.med-type-other');
+      const typeOther = typeOtherEl ? typeOtherEl.value.trim() : "";
+      if (type === "その他" && typeOther) {
+        type = typeOther;
+      }
+
+      const prn = med.querySelector('.med-prn').checked;
+      const formVal = med.querySelector('.med-form').value;
+      let dose = "";
+      let area = med.querySelector('.med-dose-area')?.value.trim() || "";
+
+      if (formVal === "syrup") {
+        const val = med.querySelector('.med-dose')?.value.trim();
+        if (val) dose = `1回${val}ml`;
+      } else if (formVal === "drops") {
+        const val = med.querySelector('.med-dose')?.value.trim();
+        if (val) dose = `1回${val}ドロップ`;
+      } else if (formVal === "spray") {
+        const val = med.querySelector('.med-dose')?.value.trim();
+        if (val) dose = `1回${val}スプレー`;
+      } else {
+        dose = med.querySelector('.med-dose')?.value.trim() || "";
+      }
+
+      if (dose && area) dose = `${dose}・${area}`;
+
+      const freq = med.querySelector('.frequency-select').value.trim();
+      const time = med.querySelector('.time-detail-select').value.trim();
+      const food = med.querySelector('.med-foodtiming').value.trim();
+      const durN = med.querySelector('.med-duration-num').value.trim();
+      const durT = med.querySelector('.med-duration-type').value.trim();
+      const note = med.querySelector('.med-note').value.trim();
+      const memo = med.querySelector('.med-memo').value.trim();
+
+      text += `${idx + 1}. ${name}\n`;
+      if (type) text += `${type}\n`;
+
+      if (prn) {
+        text += "※ 頓服用（必要時のみ服用）\n";
+        if (dose) text += `${dose}\n`;
+      } else {
+        const parts = [];
+        if (dose) parts.push(dose);
+        if (freq) parts.push(freq);
+        if (time && time !== "服用タイミング") parts.push(time);
+        if (food) parts.push(food);
+        if (durN && durT) parts.push(durN + durT);
+        if (parts.length) text += parts.join("・") + "\n";
+      }
+
+      if (note) text += "※ " + note + "\n";
+      if (memo) text += "メモ: " + memo + "\n";
+      text += "\n";
+    });
+    return text.trim();
+  }
+
+  // ✅ Copy with mobile fallback
+  function copyText() {
+    if (!validateMeds()) { alert("必須入力があります"); return; }
+    const text = buildText() + "\n\nご確認よろしくお願いいたします。";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => alert("コピーしました！")).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      alert("コピーしました！");
+    } catch (err) {
+      alert("コピーに失敗しました。手動でコピーしてください。");
+    }
+    document.body.removeChild(textarea);
+  }
+
+  // ✅ Print (works on mobile too)
+  document.getElementById("printBtn").addEventListener("click", () => {
+    if (!validateMeds()) return alert("必須入力があります");
+    const text = buildText() + "\n\nご確認よろしくお願いいたします。";
+    const htmlText = text.replace(/\n/g, "<br>");
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow.document.write(`
+      <html><head><title>処方されたお薬の飲み方・使い方</title>
+      <style>body { font-family: 'Noto Sans JP', sans-serif; white-space: pre-wrap; }</style>
+      </head><body>${htmlText}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  });
+
+// --- Save as PDF (mobile & desktop safe, with footer) ---
+document.getElementById("pdfBtn").addEventListener("click", () => {
+  if (!validateMeds()) return alert("必須入力があります");
+
+  const text = buildText();
+
+  // Build wrapper
+  const wrapper = document.createElement("div");
+  wrapper.style.fontFamily = "'Noto Sans JP', sans-serif";
+  wrapper.style.width = "100%";
+  wrapper.style.padding = "20px";   // ensure footer not cut off
+  wrapper.style.boxSizing = "border-box";
+
+  // Main text
+  const mainDiv = document.createElement("div");
+  mainDiv.innerHTML = text.replace(/\n/g, "<br>");
+  wrapper.appendChild(mainDiv);
+
+  // ✅ Footer (separate block, normal weight)
+  const footer = document.createElement("div");
+  footer.style.marginTop = "30px";
+  footer.textContent = "ご確認よろしくお願いいたします。";
+  wrapper.appendChild(footer);
+
+  // Filename with date
+  const today = new Date().toISOString().split("T")[0];
+
+  // Generate PDF
+  html2pdf().set({
+    margin: 10,
+    filename: "prescription_" + today + ".pdf",
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  }).from(wrapper).save();
+});
+
+  // Event bindings
+  document.getElementById('copyBtn').addEventListener('click', copyText);
+  document.getElementById('addMed').addEventListener('click', () => createMedicineRow());
+
+  // init
+  createMedicineRow();
+</script>
+
+</body>
+</html>
