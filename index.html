@@ -3062,7 +3062,7 @@
     medDiv.innerHTML = `
       <div class="medication-number">${medCounter}.</div>
       <div class="mb-2">
-        <input type="text" class="form-control med-name" placeholder="薬の名前" list="medicineList">
+        <input type="text" class="form-control med-name" placeholder="薬の名前" list="medicineList" autocomplete="off" onfocus="this.value='';">
       </div>
       <div class="mb-2 d-flex align-items-center gap-2">
         <div style="flex: 1;">
@@ -3423,5 +3423,3 @@ document.getElementById("pdfBtn").addEventListener("click", () => {
 
 </body>
 </html>
-
-
