@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>処方されたお薬の飲み方・使い方</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+  <!-- Japanese font -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
+
+  <!-- html2pdf.js (for PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <style>
+    body { background-color: #f9f9f9; padding: 20px; font-family: 'Noto Sans JP', sans-serif; }
+    .prescription-box { background: white; padding: 20px; border-radius: 10px; }
+    .medication { border-bottom: 1px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
+    .medication-number { font-weight: bold; }
+    .dose-line label { display: none; }
+    .invalid-input { border-color: red !important; box-shadow: 0 0 5px red !important; }
+    @media print { .no-print { display: none !important; } }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2 class="text-center mb-4">処方されたお薬の飲み方・使い方</h2>
+
+  <div class="prescription-box" id="prescription">
+    <div id="medications"></div>
+    <button class="btn btn-secondary btn-sm no-print mt-3" id="addMed">＋ 薬を追加</button>
+  </div>
+
+  <div class="text-center mt-4 no-print">
+    <button class="btn btn-primary me-2" id="copyBtn">テキストをコピー</button>
+    <button class="btn btn-success" id="printBtn">印刷</button>
+    <button class="btn btn-danger ms-2" id="pdfBtn">PDF保存</button>
+  </div>
+</div>
+
+<datalist id="medicineList">
+<option value="A to Z"></option>
+<option value="Abbott Brands"></option>
+<option value="Abilify"></option>
+<option value="Accutane"></option>
+<option value="Acetazolamide"></option>
+<option value="Aciloc"></option>
+<option value="Acitrom"></option>
+<option value="Aclidinium"></option>
+<option value="Acnederm"></option>
+<option value="Actos"></option>
+<option value="Actrapid"></option>
+<option value="Acyclovir"></option>
+<option value="Adalimumab"></option>
+<option value="Adapalene"></option>
+<option value="Adderall"></option>
+<option value="Adefovir"></option>
+<option value="Adriamycin"></option>
+<option value="Afatinib"></option>
+<option value="Afinitor"></option>
+<option value="Aflibercept"></option>
+<option value="Albendazole"></option>
+<option value="Aldactone"></option>
+<option value="Alkem Brands"></option>
+<option value="Allegra"></option>
+<option value="Allerzynix"></option>
+<option value="Allopurinol"></option>
+<option value="Almox"></option>
+<option value="Alprazolam"></option>
+<option value="Althrocin"></option>
+<option value="Amantadine"></option>
+<option value="Amaryl"></option>
+<option value="Ambien"></option>
+<option value="Amlip"></option>
+<option value="Amlodac"></option>
+<option value="Amlong"></option>
+<option value="Amphotericin"></option>
+<option value="Analgesic combinations"></option>
+<option value="Anastrozole"></option>
+<option value="Anavar"></option>
+<option value="Andriol"></option>
+<option value="Andriol Testocaps"></option>
+<option value="Androcur"></option>
+<option value="Androgel"></option>
+<option value="Anti Rabies Serum"></option>
+<option value="Anti-platelets"></option>
+<option value="Antibneuol"></option>
+<option value="Antiemetics"></option>
+<option value="Antihelminthics"></option>
+<option value="Antihistamines"></option>
+<option value="Antimalarials"></option>
+<option value="Antipsychotics"></option>
+<option value="Antitussives"></option>
+<option value="Apidra"></option>
+<option value="Apixaban"></option>
+<option value="Apremilast"></option>
+<option value="Aprepitant"></option>
+<option value="Aricept"></option>
+<option value="Arip"></option>
+<option value="Aripiprazole"></option>
+<option value="Arixtra"></option>
+<option value="Armodafinil"></option>
+<option value="Aromasin"></option>
+<option value="Artemether"></option>
+<option value="Artesunate"></option>
+<option value="Ascoril"></option>
+<option value="Asthalin"></option>
+<option value="Atazanavir"></option>
+<option value="Atenolol"></option>
+<option value="Ativan"></option>
+<option value="Atocor"></option>
+<option value="Atomoxetine"></option>
+<option value="Atorfit"></option>
+<option value="Atorlip"></option>
+<option value="Atrovent"></option>
+<option value="Augmentin"></option>
+<option value="Augpen"></option>
+<option value="Avandia"></option>
+<option value="Avastin"></option>
+<option value="Aventis Brands"></option>
+<option value="Avil"></option>
+<option value="Avodart"></option>
+<option value="Azathioprine"></option>
+<option value="Azax"></option>
+<option value="Azee"></option>
+<option value="Azelex"></option>
+<option value="Azibact"></option>
+<option value="Azibact-L"></option>
+<option value="Azibest"></option>
+<option value="Azicip"></option>
+<option value="Aziklar"></option>
+<option value="Azilect"></option>
+<option value="Azimax"></option>
+<option value="Azitec"></option>
+<option value="Azithral"></option>
+<option value="Aztor"></option>
+<option value="Aztor ASP"></option>
+<option value="Azulfidine"></option>
+<option value="BCG"></option>
+<option value="Baclofen"></option>
+<option value="Bactrim"></option>
+<option value="Bactroban"></option>
+<option value="Baidyanath Brands"></option>
+<option value="Balsalazide"></option>
+<option value="Baricitinib"></option>
+<option value="Basaglar"></option>
+<option value="Basalog"></option>
+<option value="Bayer Animal Health"></option>
+<option value="Bayer Brands"></option>
+<option value="Becosules"></option>
+<option value="Benadryl"></option>
+<option value="Benralizumab"></option>
+<option value="Benzac AC"></option>
+<option value="Benzhexol"></option>
+<option value="Benzonatate"></option>
+<option value="Betacard"></option>
+<option value="Betadine"></option>
+<option value="Betadine Antiseptic"></option>
+<option value="Betagan"></option>
+<option value="Betnovate"></option>
+<option value="Betnovate C"></option>
+<option value="Betoptic"></option>
+<option value="Bevacizumab"></option>
+<option value="Biktarvy"></option>
+<option value="Bilastine"></option>
+<option value="Bilaxten"></option>
+<option value="Biocaron"></option>
+<option value="Bioinfol"></option>
+<option value="Biomax"></option>
+<option value="Biophaol"></option>
+<option value="Biovitol"></option>
+<option value="Bisacodyl"></option>
+<option value="Biselect"></option>
+<option value="Bisoprolol"></option>
+<option value="Bleomycin"></option>
+<option value="Boehringer Brands"></option>
+<option value="Boost"></option>
+<option value="Bournvita"></option>
+<option value="Breo"></option>
+<option value="Brilinta"></option>
+<option value="Brimonidine"></option>
+<option value="Brolucizumab"></option>
+<option value="Bronchodilators"></option>
+<option value="Brufen"></option>
+<option value="Budecort"></option>
+<option value="Budesonide"></option>
+<option value="Buprenorphine"></option>
+<option value="Bupropion"></option>
+<option value="Cadila Brands"></option>
+<option value="Caduet"></option>
+<option value="Calamine"></option>
+<option value="Calcimax"></option>
+<option value="Calcineurin Inhibitor"></option>
+<option value="Calpol"></option>
+<option value="Calpol Advance"></option>
+<option value="Canagliflozin"></option>
+<option value="Candid"></option>
+<option value="Canesten"></option>
+<option value="Carafate"></option>
+<option value="Carbamazepine"></option>
+<option value="Carbidopa"></option>
+<option value="Carbimazole"></option>
+<option value="Carboplatin"></option>
+<option value="Cardace"></option>
+<option value="Cardiocliix"></option>
+<option value="Cardioheaon"></option>
+<option value="Cardiomyool"></option>
+<option value="Cardioneo"></option>
+<option value="Cardiovirol"></option>
+<option value="Cardiowela"></option>
+<option value="Carecliix"></option>
+<option value="Caregluon"></option>
+<option value="Careneoex"></option>
+<option value="Carevitast"></option>
+<option value="Carvedilol"></option>
+<option value="Caspofungin"></option>
+<option value="Cefaclor"></option>
+<option value="Cefadroxil"></option>
+<option value="Cefdinir"></option>
+<option value="Cefepime"></option>
+<option value="Cefixime"></option>
+<option value="Cefoperazone"></option>
+<option value="Cefotaxime"></option>
+<option value="Cefspan"></option>
+<option value="Ceftriaxone"></option>
+<option value="Ceftum"></option>
+<option value="Cefuroxime"></option>
+<option value="Celin"></option>
+<option value="CellCept"></option>
+<option value="Centchroman"></option>
+<option value="Centrum"></option>
+<option value="Cervarix"></option>
+<option value="Cetaphil"></option>
+<option value="Cetapin"></option>
+<option value="Cetomacrogol Cream"></option>
+<option value="Cetrizine"></option>
+<option value="Cetuximab"></option>
+<option value="Cetzine"></option>
+<option value="Cetzine M"></option>
+<option value="Champix"></option>
+<option value="Chericof"></option>
+<option value="Chloramphenicol"></option>
+<option value="Chloroquine"></option>
+<option value="Chlorpromazine"></option>
+<option value="Chlortrimeton"></option>
+<option value="Cifran"></option>
+<option value="Cipla Brands"></option>
+<option value="Ciplox"></option>
+<option value="Ciplox Eye"></option>
+<option value="Ciprobid"></option>
+<option value="Ciprofloxacin Eye Drops"></option>
+<option value="Cisplatin"></option>
+<option value="Clarinex"></option>
+<option value="Clarithro"></option>
+<option value="Clavam"></option>
+<option value="Clavam Dry"></option>
+<option value="Clexane"></option>
+<option value="Climara"></option>
+<option value="Clinbioin"></option>
+<option value="Clindac"></option>
+<option value="Clindamycin"></option>
+<option value="Clinlifon"></option>
+<option value="Clinmedo"></option>
+<option value="Clinneuon"></option>
+<option value="Clinophix"></option>
+<option value="Clinphaa"></option>
+<option value="Clinphaast"></option>
+<option value="Clinwela"></option>
+<option value="Clobazam"></option>
+<option value="Clobetasol Propionate"></option>
+<option value="Clobex"></option>
+<option value="Clomid"></option>
+<option value="Clonazepam"></option>
+<option value="Clopid"></option>
+<option value="Clopidogrel"></option>
+<option value="Clopilet"></option>
+<option value="Clopitab"></option>
+<option value="Clopivas"></option>
+<option value="Clopivas AP"></option>
+<option value="Clotrim"></option>
+<option value="Clotrimazole"></option>
+<option value="Cloxacillin"></option>
+<option value="Clozapine"></option>
+<option value="Clozaril"></option>
+<option value="Codeine"></option>
+<option value="Colchicine"></option>
+<option value="Colistin"></option>
+<option value="Combiflam"></option>
+<option value="Combivent"></option>
+<option value="Concor"></option>
+<option value="Corex"></option>
+<option value="Cresar"></option>
+<option value="Crestor"></option>
+<option value="Crizotinib"></option>
+<option value="Crocin"></option>
+<option value="CuT"></option>
+<option value="Curederol"></option>
+<option value="Curelif"></option>
+<option value="Curelipo"></option>
+<option value="Curemaxa"></option>
+<option value="Cureoph"></option>
+<option value="Curevitol"></option>
+<option value="Cyclobenzaprine"></option>
+<option value="Cyclophosphamide"></option>
+<option value="Cyproterone"></option>
+<option value="DT"></option>
+<option value="DTP"></option>
+<option value="DTwP"></option>
+<option value="Dabur Brands"></option>
+<option value="Dapagliflozin"></option>
+<option value="Darunavir"></option>
+<option value="Dasatinib"></option>
+<option value="Deca-Durabolin"></option>
+<option value="Depakine"></option>
+<option value="Depakote"></option>
+<option value="Dermajuice"></option>
+<option value="Dermphaol"></option>
+<option value="Dermplu"></option>
+<option value="Desogestrel"></option>
+<option value="Dettol"></option>
+<option value="Dexamphetamine"></option>
+<option value="Dexilant"></option>
+<option value="Dexorange"></option>
+<option value="Dextromethorphan"></option>
+<option value="Diamox"></option>
+<option value="Diazepam"></option>
+<option value="Diclomol"></option>
+<option value="Differin"></option>
+<option value="Diflucan"></option>
+<option value="Digene"></option>
+<option value="Dilantin"></option>
+<option value="Dilzem"></option>
+<option value="Docetaxel"></option>
+<option value="Dolo-650"></option>
+<option value="Dolokind"></option>
+<option value="Dolokind MR"></option>
+<option value="Dolopar"></option>
+<option value="Dolutegravir"></option>
+<option value="Domperidone"></option>
+<option value="Domstal"></option>
+<option value="Donepezil"></option>
+<option value="Dopamine Agonist"></option>
+<option value="Dorzolamide"></option>
+<option value="Doxorubicin"></option>
+<option value="Doxycycline"></option>
+<option value="Dr Reddy's Brands"></option>
+<option value="Dr Willmar Schwabe"></option>
+<option value="Drospirenone"></option>
+<option value="Drysol"></option>
+<option value="Dulcolax"></option>
+<option value="Duolin"></option>
+<option value="Duphalac"></option>
+<option value="Dupilumab"></option>
+<option value="Dupixent"></option>
+<option value="Duricef"></option>
+<option value="Dutasteride"></option>
+<option value="Ecosprin"></option>
+<option value="Ecosprin AV"></option>
+<option value="Edaravone"></option>
+<option value="Edoxaban"></option>
+<option value="Efavirenz"></option>
+<option value="Effient"></option>
+<option value="Eli Lilly Brands"></option>
+<option value="Elidel"></option>
+<option value="Eliquis"></option>
+<option value="Elocon"></option>
+<option value="Elovera"></option>
+<option value="Eltroxin"></option>
+<option value="Emergency Contraceptive"></option>
+<option value="Emeset"></option>
+<option value="Empagliflozin"></option>
+<option value="Enbrel"></option>
+<option value="Ensure"></option>
+<option value="Entacapone"></option>
+<option value="Entacavir"></option>
+<option value="Entecavir"></option>
+<option value="Entresto"></option>
+<option value="Entresto Brands"></option>
+<option value="Epclusa"></option>
+<option value="Epilim"></option>
+<option value="Erlotinib"></option>
+<option value="Ertapenem"></option>
+<option value="Ertugliflozin"></option>
+<option value="Erythrocin"></option>
+<option value="Esomac"></option>
+<option value="Esomac D"></option>
+<option value="Esose"></option>
+<option value="Estrace"></option>
+<option value="Estradiol"></option>
+<option value="Estriol"></option>
+<option value="Eszopiclone"></option>
+<option value="Etanercept"></option>
+<option value="Ethinylestradiol"></option>
+<option value="Etizola"></option>
+<option value="Etoposide"></option>
+<option value="Etoricoxib"></option>
+<option value="Etoshine"></option>
+<option value="Etoshine MR"></option>
+<option value="Everolimus"></option>
+<option value="Evion"></option>
+<option value="Evista"></option>
+<option value="Evorel"></option>
+<option value="Evotaz"></option>
+<option value="Exelon"></option>
+<option value="Exemestane"></option>
+<option value="Eylea"></option>
+<option value="Famciclovir"></option>
+<option value="Famocid"></option>
+<option value="Famotidine"></option>
+<option value="Fansidar"></option>
+<option value="Fasenra"></option>
+<option value="Favipiravir"></option>
+<option value="Febrex"></option>
+<option value="Febuxostat"></option>
+<option value="Femara"></option>
+<option value="Fentanyl"></option>
+<option value="Fexofenadine"></option>
+<option value="Fexova"></option>
+<option value="Fiberlax"></option>
+<option value="Finax"></option>
+<option value="Fincar"></option>
+<option value="Finpecia"></option>
+<option value="Flagyl"></option>
+<option value="Flexeril"></option>
+<option value="Flexura"></option>
+<option value="Flu Vaccine"></option>
+<option value="Fluconazole"></option>
+<option value="Fluphenazine"></option>
+<option value="Flur Eye"></option>
+<option value="Flurbiprofen Eye Drops"></option>
+<option value="Folvite"></option>
+<option value="Fondaparinux"></option>
+<option value="Foracort"></option>
+<option value="Foradil"></option>
+<option value="Formoterol"></option>
+<option value="Forxiga"></option>
+<option value="Fucidin"></option>
+<option value="GNC Brands"></option>
+<option value="GSK Brands"></option>
+<option value="Galantamine"></option>
+<option value="Galvus"></option>
+<option value="Gardasil"></option>
+<option value="Gastromycon"></option>
+<option value="Gastropeda"></option>
+<option value="Gastrophaol"></option>
+<option value="Gastroprotectants"></option>
+<option value="Gastrorexin"></option>
+<option value="Gatifloxacin Eye Drops"></option>
+<option value="Gaviscon"></option>
+<option value="Gefitinib"></option>
+<option value="Gelusil"></option>
+<option value="Gemcitabine"></option>
+<option value="Genvoya"></option>
+<option value="Gleevec"></option>
+<option value="Glenmark Brands"></option>
+<option value="Gliclazide"></option>
+<option value="Glimepiride"></option>
+<option value="Glimiperide"></option>
+<option value="Glipizide"></option>
+<option value="Glucerna"></option>
+<option value="Glucocarin"></option>
+<option value="Glucocarol"></option>
+<option value="Gluconeoo"></option>
+<option value="Gluconorm"></option>
+<option value="Glucophaast"></option>
+<option value="Glucophage"></option>
+<option value="Glucoproa"></option>
+<option value="Glucoresex"></option>
+<option value="Glucozynix"></option>
+<option value="Glyciphage"></option>
+<option value="Glycolic Acid"></option>
+<option value="Glycomet"></option>
+<option value="Glycopyrronium"></option>
+<option value="Glynase"></option>
+<option value="Glypride"></option>
+<option value="Grilinctus"></option>
+<option value="HBsAg Vaccine"></option>
+<option value="HPV Vaccine"></option>
+<option value="HRT Patches"></option>
+<option value="Hairgain"></option>
+<option value="Haloperidol"></option>
+<option value="Harvoni"></option>
+<option value="Healanto"></option>
+<option value="Healcarast"></option>
+<option value="Healcliast"></option>
+<option value="Healderon"></option>
+<option value="Healgluo"></option>
+<option value="Healmaxol"></option>
+<option value="Healoph"></option>
+<option value="Healotoa"></option>
+<option value="HealthKart"></option>
+<option value="Healviro"></option>
+<option value="Healvirol"></option>
+<option value="Healwelol"></option>
+<option value="HepA"></option>
+<option value="HepB"></option>
+<option value="Heparin"></option>
+<option value="Hepatitis A Vaccine"></option>
+<option value="Hepatitis B Vaccine"></option>
+<option value="Hepcinat"></option>
+<option value="Herbal Supplements"></option>
+<option value="Herceptin"></option>
+<option value="Hifenac"></option>
+<option value="Himalaya Brands"></option>
+<option value="Histac"></option>
+<option value="Homeopathy Brands"></option>
+<option value="Horlicks"></option>
+<option value="Humalog"></option>
+<option value="Huminsulin"></option>
+<option value="Humira"></option>
+<option value="Hydrocortisone Cream"></option>
+<option value="Hydroquinone"></option>
+<option value="Hydroxychloroquine"></option>
+<option value="Hyzaar"></option>
+<option value="I-pill"></option>
+<option value="IPV"></option>
+<option value="IUDs"></option>
+<option value="Ibugesic"></option>
+<option value="Imatinib"></option>
+<option value="Imipenem"></option>
+<option value="Imodium"></option>
+<option value="Imuran"></option>
+<option value="Incruse"></option>
+<option value="Inderal"></option>
+<option value="Infexcurex"></option>
+<option value="Infexpedol"></option>
+<option value="Infliximab"></option>
+<option value="Influenza Vaccine"></option>
+<option value="Insugen"></option>
+<option value="Invokana"></option>
+<option value="Ipratropium"></option>
+<option value="Irinotecan"></option>
+<option value="Isabgol"></option>
+<option value="Isentress"></option>
+<option value="Isoconazole"></option>
+<option value="Isopure"></option>
+<option value="Isosorbide"></option>
+<option value="Isotretinoin"></option>
+<option value="Isotrex"></option>
+<option value="Istamet"></option>
+<option value="Itopride"></option>
+<option value="Itraconazole"></option>
+<option value="Janssen Brands"></option>
+<option value="Janumet"></option>
+<option value="Januvia"></option>
+<option value="Jardiance"></option>
+<option value="Kaletra"></option>
+<option value="Kefpod"></option>
+<option value="Kenacort"></option>
+<option value="Keppra"></option>
+<option value="Ketanov"></option>
+<option value="Ketoconazole"></option>
+<option value="Ketoconazole Shampoo"></option>
+<option value="Ketorol"></option>
+<option value="Keytruda"></option>
+<option value="Kirkland Minoxidil"></option>
+<option value="Kirkland Signature"></option>
+<option value="Klonopin"></option>
+<option value="Kojic"></option>
+<option value="Lactogen"></option>
+<option value="Lactulose"></option>
+<option value="Lamictal"></option>
+<option value="Lamisil"></option>
+<option value="Lamisil Cream"></option>
+<option value="Lamivudine"></option>
+<option value="Lamosyn"></option>
+<option value="Lamotrigine"></option>
+<option value="Lansop"></option>
+<option value="Lantus"></option>
+<option value="Latanoprost"></option>
+<option value="Ledipasvir"></option>
+<option value="Leflunomide"></option>
+<option value="Letrozole"></option>
+<option value="Levamisole"></option>
+<option value="Levaquin"></option>
+<option value="Levemir"></option>
+<option value="Levetiracetam"></option>
+<option value="Levocet"></option>
+<option value="Levocet D"></option>
+<option value="Levocetirizine"></option>
+<option value="Levodopa"></option>
+<option value="Levoflox"></option>
+<option value="Levofloxacin Eye Drops"></option>
+<option value="Levolin"></option>
+<option value="Levonorgestrel"></option>
+<option value="Levosulpiride"></option>
+<option value="Lifegasex"></option>
+<option value="Lifemedol"></option>
+<option value="Lifeproix"></option>
+<option value="Limcee"></option>
+<option value="Linagliptin"></option>
+<option value="Linezolid"></option>
+<option value="Lipicard"></option>
+<option value="Lipicure"></option>
+<option value="Lipitor"></option>
+<option value="Lipobioa"></option>
+<option value="Lipocli"></option>
+<option value="Lipoderin"></option>
+<option value="Liponorm"></option>
+<option value="Lisdexamfetamine"></option>
+<option value="Lisinopril"></option>
+<option value="Livogen"></option>
+<option value="Loette"></option>
+<option value="Lonazep"></option>
+<option value="Loperamide"></option>
+<option value="Lopinavir"></option>
+<option value="Lopressor"></option>
+<option value="Loratadine"></option>
+<option value="Lorazepam"></option>
+<option value="Lornoxicam"></option>
+<option value="Losar"></option>
+<option value="Lotrimin"></option>
+<option value="Lovenox"></option>
+<option value="Lucentis"></option>
+<option value="Lumigan"></option>
+<option value="Lunesta"></option>
+<option value="Lupin Brands"></option>
+<option value="Lupitor"></option>
+<option value="MMR"></option>
+<option value="MSD Brands"></option>
+<option value="Maalox"></option>
+<option value="Macrobid"></option>
+<option value="Macrodantin"></option>
+<option value="Macrogol"></option>
+<option value="Macrox"></option>
+<option value="Madopar"></option>
+<option value="Mala-D"></option>
+<option value="Mankind Brands"></option>
+<option value="Maxgluol"></option>
+<option value="Maxlifon"></option>
+<option value="Maxlipol"></option>
+<option value="Maxpedin"></option>
+<option value="Maxphain"></option>
+<option value="Maxvirin"></option>
+<option value="Measles Vaccine"></option>
+<option value="Mebendazole"></option>
+<option value="Mediinfast"></option>
+<option value="Mediinfol"></option>
+<option value="Medilipex"></option>
+<option value="Medimedast"></option>
+<option value="Medipedon"></option>
+<option value="Mediprool"></option>
+<option value="Mediresast"></option>
+<option value="Mediresol"></option>
+<option value="Mediwelast"></option>
+<option value="Medizynon"></option>
+<option value="Mefloquine"></option>
+<option value="Meftal"></option>
+<option value="Melacare"></option>
+<option value="Melalite"></option>
+<option value="Memantine"></option>
+<option value="Mepolizumab"></option>
+<option value="Merck Brands"></option>
+<option value="Meropenem"></option>
+<option value="Mesacol"></option>
+<option value="Metacin"></option>
+<option value="Metformin"></option>
+<option value="Methadone"></option>
+<option value="Methotrexate"></option>
+<option value="Methylphenidate"></option>
+<option value="Metoclopramide"></option>
+<option value="Metolar"></option>
+<option value="Metpure"></option>
+<option value="Metrogyl"></option>
+<option value="Metzok"></option>
+<option value="Micafungin"></option>
+<option value="Micardis"></option>
+<option value="Micardis Plus"></option>
+<option value="Miconazole"></option>
+<option value="Midazolam"></option>
+<option value="Minocycline"></option>
+<option value="Minoxidil"></option>
+<option value="Mintop"></option>
+<option value="Mirapexin"></option>
+<option value="Mirena"></option>
+<option value="Misoprostol"></option>
+<option value="Misoprostol Brands"></option>
+<option value="Mixtard"></option>
+<option value="Modafinil"></option>
+<option value="Moisturizer"></option>
+<option value="Molnupiravir"></option>
+<option value="Mometasone"></option>
+<option value="Monotrate"></option>
+<option value="Montair"></option>
+<option value="Montek"></option>
+<option value="Montelukast Brands"></option>
+<option value="Morphine"></option>
+<option value="Mosapride"></option>
+<option value="Movex"></option>
+<option value="Movicol"></option>
+<option value="Moxicip"></option>
+<option value="Moxicip Eye"></option>
+<option value="Moxifloxacin Eye"></option>
+<option value="Moxikind"></option>
+<option value="Mucaine"></option>
+<option value="Multivitamin"></option>
+<option value="Mupimet"></option>
+<option value="MuscleBlaze"></option>
+<option value="Muscoril"></option>
+<option value="Mycomed"></option>
+<option value="Mycomycast"></option>
+<option value="Myconovast"></option>
+<option value="Mycoophin"></option>
+<option value="Mycootool"></option>
+<option value="Mycophenolate"></option>
+<option value="Mylanta"></option>
+<option value="Myomaxast"></option>
+<option value="Myomaxol"></option>
+<option value="Myophao"></option>
+<option value="Myoril"></option>
+<option value="Myospaz"></option>
+<option value="Myprotein"></option>
+<option value="Namenda"></option>
+<option value="Nan Pro"></option>
+<option value="Nandrolone"></option>
+<option value="Naprosyn"></option>
+<option value="Natamycin"></option>
+<option value="Nature Made"></option>
+<option value="Nature's Bounty"></option>
+<option value="Nebicard"></option>
+<option value="Nebido"></option>
+<option value="Nebistar"></option>
+<option value="Neksium"></option>
+<option value="Neocurol"></option>
+<option value="Neogasin"></option>
+<option value="Neogluex"></option>
+<option value="Neomercazole"></option>
+<option value="Neonov"></option>
+<option value="Neosporin"></option>
+<option value="Neprilysin Inhibitors"></option>
+<option value="Neurobio"></option>
+<option value="Neurobion"></option>
+<option value="Neurogasix"></option>
+<option value="Neurolipa"></option>
+<option value="Neuronovix"></option>
+<option value="Neuronovol"></option>
+<option value="Neurootoon"></option>
+<option value="Neuropedin"></option>
+<option value="Nevirapine"></option>
+<option value="Nexito"></option>
+<option value="Nexium"></option>
+<option value="Nexmaxix"></option>
+<option value="Nexpro"></option>
+<option value="Nextheex"></option>
+<option value="Niclosamide"></option>
+<option value="Nicorette"></option>
+<option value="Nicotinell"></option>
+<option value="Nicoumalone"></option>
+<option value="Nilotinib"></option>
+<option value="Nimulid"></option>
+<option value="Nise"></option>
+<option value="Nitrofurantoin"></option>
+<option value="Nitrostat"></option>
+<option value="Nizoral"></option>
+<option value="Nolvadex"></option>
+<option value="Norilet"></option>
+<option value="Novaclox"></option>
+<option value="Novacurol"></option>
+<option value="Novaderol"></option>
+<option value="Novamaxix"></option>
+<option value="Novamycin"></option>
+<option value="Novanexix"></option>
+<option value="Novanovon"></option>
+<option value="Novaotoin"></option>
+<option value="Novareson"></option>
+<option value="Novartis Brands"></option>
+<option value="Novathea"></option>
+<option value="NovoMix 30"></option>
+<option value="Novomix"></option>
+<option value="Novorapid"></option>
+<option value="Nucala"></option>
+<option value="Nucoxia"></option>
+<option value="Nuedex"></option>
+<option value="Nuedexta"></option>
+<option value="Nuvigil"></option>
+<option value="OPV"></option>
+<option value="ORS Dabur"></option>
+<option value="ORS Electral"></option>
+<option value="ORS Enerzal"></option>
+<option value="ORS Glucose D"></option>
+<option value="ORS Hydralyte"></option>
+<option value="Obimet"></option>
+<option value="Ocid"></option>
+<option value="Oflox"></option>
+<option value="Ofloxacin Eye Drops"></option>
+<option value="Ofloxin"></option>
+<option value="Okacet"></option>
+<option value="Okacet L"></option>
+<option value="Olanzapine"></option>
+<option value="Olanzia"></option>
+<option value="Olmesar"></option>
+<option value="Olumiant"></option>
+<option value="Omalizumab"></option>
+<option value="Omez"></option>
+<option value="Omez D"></option>
+<option value="Oncology Generics"></option>
+<option value="Ondem"></option>
+<option value="One A Day"></option>
+<option value="Onfi"></option>
+<option value="Onglyza"></option>
+<option value="Opdivo"></option>
+<option value="Ophthbioa"></option>
+<option value="Ophthcliast"></option>
+<option value="Ophthneool"></option>
+<option value="Ophthneuon"></option>
+<option value="Ophthnovo"></option>
+<option value="Ophthoto"></option>
+<option value="Ophthpeda"></option>
+<option value="Ophthproix"></option>
+<option value="Ophththeol"></option>
+<option value="Ophthvita"></option>
+<option value="Opioids"></option>
+<option value="Optimum Nutrition"></option>
+<option value="Oral Contraceptives"></option>
+<option value="Orofer"></option>
+<option value="Oseltamivir"></option>
+<option value="Osimertinib"></option>
+<option value="Osteocalcium"></option>
+<option value="Otezla"></option>
+<option value="Otocurin"></option>
+<option value="Otolifast"></option>
+<option value="Otomedol"></option>
+<option value="Otomyca"></option>
+<option value="Otomycol"></option>
+<option value="Otomyo"></option>
+<option value="Otomyoix"></option>
+<option value="Otoneuol"></option>
+<option value="Otonexo"></option>
+<option value="Otooto"></option>
+<option value="Otophaon"></option>
+<option value="Otorexa"></option>
+<option value="Ototheex"></option>
+<option value="Otozyno"></option>
+<option value="Ovral"></option>
+<option value="Oxaliplatin"></option>
+<option value="Oxandrolone"></option>
+<option value="Oxcarbazepine"></option>
+<option value="Oxetol"></option>
+<option value="Oxycodone"></option>
+<option value="PTU"></option>
+<option value="Pacimol"></option>
+<option value="Pacimol Active"></option>
+<option value="Paclitaxel"></option>
+<option value="Palonosetron"></option>
+<option value="Pan"></option>
+<option value="Panadol"></option>
+<option value="Pansec"></option>
+<option value="Pantadoc"></option>
+<option value="Pantocid"></option>
+<option value="Pantodac"></option>
+<option value="Pantop"></option>
+<option value="Pantosec"></option>
+<option value="Paracetamol Brands"></option>
+<option value="Paracip"></option>
+<option value="Patanjali Brands"></option>
+<option value="Pediaglu"></option>
+<option value="Pedialipex"></option>
+<option value="Pediamed"></option>
+<option value="Pediamedex"></option>
+<option value="Pediamyoix"></option>
+<option value="Pediapedix"></option>
+<option value="Pediasure"></option>
+<option value="Pediasure Advance"></option>
+<option value="Pediatheo"></option>
+<option value="Pegaptanib"></option>
+<option value="Pentasa"></option>
+<option value="Pepcid"></option>
+<option value="Perindopril"></option>
+<option value="Perinorm"></option>
+<option value="Perphenazine"></option>
+<option value="Pexep"></option>
+<option value="Pfizer Brands"></option>
+<option value="Pharmgasex"></option>
+<option value="Pharmmaxa"></option>
+<option value="Pharmmaxon"></option>
+<option value="Pharmneuix"></option>
+<option value="Pharmnovix"></option>
+<option value="Pharmpedol"></option>
+<option value="Pharmtheex"></option>
+<option value="Phenobarbitone"></option>
+<option value="Phenytoin"></option>
+<option value="Phexin"></option>
+<option value="Pholcodine"></option>
+<option value="Pilocaine"></option>
+<option value="Pilocar"></option>
+<option value="Pilocarpine"></option>
+<option value="Pimecrolimus Cream"></option>
+<option value="Pioglitazone"></option>
+<option value="Piriton"></option>
+<option value="Plan B"></option>
+<option value="Plaquenil"></option>
+<option value="Plavix"></option>
+<option value="Pluscliix"></option>
+<option value="Pluspluol"></option>
+<option value="Plusreson"></option>
+<option value="Plusvitol"></option>
+<option value="Pneumococcal Vaccine"></option>
+<option value="Pneumovax"></option>
+<option value="Polymyxin"></option>
+<option value="Posaconazole"></option>
+<option value="Postinor"></option>
+<option value="Povidone"></option>
+<option value="Pradaxa"></option>
+<option value="Pramipexole"></option>
+<option value="Prasugrel"></option>
+<option value="Praziquantel"></option>
+<option value="Premarin"></option>
+<option value="Prevacid"></option>
+<option value="Prevnar"></option>
+<option value="Primaquine"></option>
+<option value="Proant"></option>
+<option value="Probenecid"></option>
+<option value="Procura"></option>
+<option value="Procurex"></option>
+<option value="Proderin"></option>
+<option value="Progaso"></option>
+<option value="Prograf"></option>
+<option value="Prolomet"></option>
+<option value="Pronexo"></option>
+<option value="Propecia"></option>
+<option value="Prophaast"></option>
+<option value="Propylthiouracil"></option>
+<option value="Proresix"></option>
+<option value="Prorexo"></option>
+<option value="Protein Powders"></option>
+<option value="Protera"></option>
+<option value="Protopic"></option>
+<option value="Provigil"></option>
+<option value="Provirex"></option>
+<option value="Proxyvon"></option>
+<option value="Psyllium Husk"></option>
+<option value="Pulmicort"></option>
+<option value="Pyrantel"></option>
+<option value="Quetiapine"></option>
+<option value="Rabemac"></option>
+<option value="Rabicip"></option>
+<option value="Rabies Vaccine"></option>
+<option value="Rabium"></option>
+<option value="Raloxifene"></option>
+<option value="Raltegravir"></option>
+<option value="Ramelteon"></option>
+<option value="Ramipril"></option>
+<option value="Ranbaxy Brands"></option>
+<option value="Ranibizumab"></option>
+<option value="Rantac"></option>
+<option value="Rapamune"></option>
+<option value="Rasagiline"></option>
+<option value="Razadyne"></option>
+<option value="Razo"></option>
+<option value="Refresh Plus"></option>
+<option value="Refresh Tears"></option>
+<option value="Regaine"></option>
+<option value="Remdesivir"></option>
+<option value="Remicade"></option>
+<option value="Repace"></option>
+<option value="Requip"></option>
+<option value="Respcarast"></option>
+<option value="Respgasex"></option>
+<option value="Resphea"></option>
+<option value="Respheaon"></option>
+<option value="Respmycol"></option>
+<option value="Respmyo"></option>
+<option value="Respneoon"></option>
+<option value="Respnexol"></option>
+<option value="Respphao"></option>
+<option value="Resppluex"></option>
+<option value="Respzynol"></option>
+<option value="Restyl"></option>
+<option value="Retino-A"></option>
+<option value="Revital"></option>
+<option value="Rexlifex"></option>
+<option value="Rexneua"></option>
+<option value="Rexotoa"></option>
+<option value="Rexplu"></option>
+<option value="Rexpluon"></option>
+<option value="Rexproa"></option>
+<option value="Rexproix"></option>
+<option value="Rexreson"></option>
+<option value="Rextheix"></option>
+<option value="Rextheon"></option>
+<option value="Ribavirin"></option>
+<option value="Rifaximin"></option>
+<option value="Rilutek"></option>
+<option value="Riluzole"></option>
+<option value="Risperdal"></option>
+<option value="Risperidone"></option>
+<option value="Ritalin"></option>
+<option value="Ritonavir"></option>
+<option value="Rituxan"></option>
+<option value="Rituximab"></option>
+<option value="Rivaroxaban"></option>
+<option value="Rivastigmine"></option>
+<option value="Rogaine"></option>
+<option value="Ropinirole"></option>
+<option value="Rosiglitazone"></option>
+<option value="Rosu"></option>
+<option value="Rosuless"></option>
+<option value="Rosuvas"></option>
+<option value="Rosuvastatin Combos"></option>
+<option value="Roxid"></option>
+<option value="Rozat"></option>
+<option value="Rozavel"></option>
+<option value="Rozavel F"></option>
+<option value="Rozerem"></option>
+<option value="Rozucor"></option>
+<option value="Rubella Vaccine"></option>
+<option value="SGLT2 Combo Drugs"></option>
+<option value="SGLT2 Inhibitors"></option>
+<option value="Sacubitril Valsartan"></option>
+<option value="Safinamide"></option>
+<option value="Salbutamol"></option>
+<option value="Salmeterol"></option>
+<option value="Sanofi Brands"></option>
+<option value="Savlon"></option>
+<option value="Savlon Antiseptic"></option>
+<option value="Saxagliptin"></option>
+<option value="Scalpe"></option>
+<option value="Scalpe Shampoo"></option>
+<option value="Schwabe India"></option>
+<option value="Schwabe Pharma"></option>
+<option value="Sebamed"></option>
+<option value="Seebri"></option>
+<option value="Selegiline"></option>
+<option value="Seloken"></option>
+<option value="Selsun"></option>
+<option value="Selsun Blue"></option>
+<option value="Senna"></option>
+<option value="Senokot"></option>
+<option value="Seretide"></option>
+<option value="Serevent"></option>
+<option value="Serlift"></option>
+<option value="Seroquel"></option>
+<option value="Shelcal"></option>
+<option value="Sinarest"></option>
+<option value="Sinemet"></option>
+<option value="Singulair"></option>
+<option value="Sirdalud"></option>
+<option value="Sirolimus"></option>
+<option value="Sitagliptin"></option>
+<option value="Sizodon"></option>
+<option value="Skinlite"></option>
+<option value="Smoking Cessation"></option>
+<option value="Sofosbuvir"></option>
+<option value="Sofosbuvir+Velpatasvir"></option>
+<option value="Soframycin"></option>
+<option value="Somac"></option>
+<option value="Sorafenib"></option>
+<option value="Spinraza"></option>
+<option value="Spiriva"></option>
+<option value="Spiroton"></option>
+<option value="Spraygel"></option>
+<option value="Stalevo"></option>
+<option value="Stalopam"></option>
+<option value="Stamlo"></option>
+<option value="Stanozolol"></option>
+<option value="Starpress"></option>
+<option value="Statin Combos"></option>
+<option value="Stavudine"></option>
+<option value="Stilnox"></option>
+<option value="Storvas"></option>
+<option value="Storvas EZ"></option>
+<option value="Strattera"></option>
+<option value="Stribild"></option>
+<option value="Sucralfate"></option>
+<option value="Sulfasalazine"></option>
+<option value="Sulphasalazine"></option>
+<option value="Sumo"></option>
+<option value="Sun Pharma Brands"></option>
+<option value="Supacef"></option>
+<option value="Supradyn"></option>
+<option value="Suprax"></option>
+<option value="Surfaz"></option>
+<option value="Sustanon"></option>
+<option value="Sutent"></option>
+<option value="Symbicort"></option>
+<option value="Syndopa"></option>
+<option value="Systane"></option>
+<option value="Tacrolimus"></option>
+<option value="Tacrolimus Ointment"></option>
+<option value="Tamoxifen"></option>
+<option value="Tapazole"></option>
+<option value="Tapentadol"></option>
+<option value="Tarivid"></option>
+<option value="Tavanic"></option>
+<option value="Taxim"></option>
+<option value="Taxol"></option>
+<option value="Tazloc"></option>
+<option value="Td"></option>
+<option value="Tdap"></option>
+<option value="Tears Naturale"></option>
+<option value="Tears Plus"></option>
+<option value="Tegretol"></option>
+<option value="Teicoplanin"></option>
+<option value="Teldor"></option>
+<option value="Telekast"></option>
+<option value="Telfast"></option>
+<option value="Telma"></option>
+<option value="Telmisat"></option>
+<option value="Temsirolimus"></option>
+<option value="Teneligliptin"></option>
+<option value="Tenofovir"></option>
+<option value="Terbinafine"></option>
+<option value="Terbinaforce"></option>
+<option value="Testim"></option>
+<option value="Testosterone"></option>
+<option value="Tetracycline"></option>
+<option value="Therabioex"></option>
+<option value="Theracarast"></option>
+<option value="Theracurin"></option>
+<option value="Theraheaix"></option>
+<option value="Theramaxon"></option>
+<option value="Theraotool"></option>
+<option value="Therarexix"></option>
+<option value="Therawelast"></option>
+<option value="Thiocolchicoside"></option>
+<option value="Thyronorm"></option>
+<option value="Thyroxine"></option>
+<option value="Ticagrelor"></option>
+<option value="Ticlopidine"></option>
+<option value="Tigecycline"></option>
+<option value="Timolol"></option>
+<option value="Tiotropium"></option>
+<option value="Tixylix"></option>
+<option value="Tizanidine"></option>
+<option value="Toba Eye"></option>
+<option value="Tobramycin Eye Drops"></option>
+<option value="Tofacitinib"></option>
+<option value="Tolcapone"></option>
+<option value="Tonact"></option>
+<option value="Tonact TG"></option>
+<option value="Topamax"></option>
+<option value="Topiramate"></option>
+<option value="Toradol"></option>
+<option value="Torrent Brands"></option>
+<option value="Trajenta"></option>
+<option value="Tramadol"></option>
+<option value="Tramafix"></option>
+<option value="Trametinib"></option>
+<option value="Travatan"></option>
+<option value="Travel Vaccines"></option>
+<option value="Tresiba"></option>
+<option value="Tretinoin"></option>
+<option value="Tri-Luma"></option>
+<option value="Triamcinolone"></option>
+<option value="Trihexyphenidyl"></option>
+<option value="Trileptal"></option>
+<option value="Trinicalm"></option>
+<option value="Triphala"></option>
+<option value="Tropicamide"></option>
+<option value="Truvada"></option>
+<option value="Tugain"></option>
+<option value="Tylenol"></option>
+<option value="Typhoid Vaccine"></option>
+<option value="UDCA"></option>
+<option value="Uloric"></option>
+<option value="Ulpan"></option>
+<option value="Ultibro"></option>
+<option value="Ultracet"></option>
+<option value="Ultram"></option>
+<option value="Ursodeoxycholic Acid"></option>
+<option value="Ursodiol"></option>
+<option value="Vaccines"></option>
+<option value="Valacyclovir"></option>
+<option value="Valium"></option>
+<option value="Valparin"></option>
+<option value="Valproate"></option>
+<option value="Valtrex"></option>
+<option value="Vancomycin"></option>
+<option value="Varenicline"></option>
+<option value="Varicella Vaccine"></option>
+<option value="Vaxigrip"></option>
+<option value="Velpatasvir"></option>
+<option value="Vemlidy"></option>
+<option value="Vemurafenib"></option>
+<option value="Ventolin"></option>
+<option value="Ventorlin"></option>
+<option value="Verapamil"></option>
+<option value="Versed"></option>
+<option value="Vildagliptin"></option>
+<option value="Viread"></option>
+<option value="Virocarol"></option>
+<option value="Viroinfol"></option>
+<option value="Vironeuo"></option>
+<option value="Virootoast"></option>
+<option value="Viroviron"></option>
+<option value="Vitabioex"></option>
+<option value="Vitaheaol"></option>
+<option value="Vitalifin"></option>
+<option value="Vitameda"></option>
+<option value="Vitamyoon"></option>
+<option value="Vitaplua"></option>
+<option value="Vivelle-Dot"></option>
+<option value="Voglibose"></option>
+<option value="Volix"></option>
+<option value="Vomex"></option>
+<option value="Vomista"></option>
+<option value="Vomitrol"></option>
+<option value="Voriconazole"></option>
+<option value="Votrient"></option>
+<option value="Voveran"></option>
+<option value="Vytorin"></option>
+<option value="Vyvanse"></option>
+<option value="Wellneoo"></option>
+<option value="Wellnov"></option>
+<option value="Wellophol"></option>
+<option value="Whey Protein"></option>
+<option value="Winstrol"></option>
+<option value="Xadago"></option>
+<option value="Xalatan"></option>
+<option value="Xanax"></option>
+<option value="Xarelto"></option>
+<option value="Xeljanz"></option>
+<option value="Xifaxan"></option>
+<option value="Xolair"></option>
+<option value="Xyzal"></option>
+<option value="Yasmin"></option>
+<option value="Yaz"></option>
+<option value="Yervoy"></option>
+<option value="Zanamivir"></option>
+<option value="Zandu Brands"></option>
+<option value="Zedex"></option>
+<option value="Zelboraf"></option>
+<option value="Zerodol"></option>
+<option value="Zerodol P"></option>
+<option value="Zidovudine"></option>
+<option value="Zifi"></option>
+<option value="Zimnic"></option>
+<option value="Zincovit"></option>
+<option value="Zithrocin"></option>
+<option value="Zithromax"></option>
+<option value="Zoetis"></option>
+<option value="Zofran"></option>
+<option value="Zolfresh"></option>
+<option value="Zolgensma"></option>
+<option value="Zolpidem"></option>
+<option value="Zoryl"></option>
+<option value="Zovirax"></option>
+<option value="Zyban"></option>
+<option value="Zydus Brands"></option>
+<option value="Zyflo"></option>
+<option value="Zyloprim"></option>
+<option value="Zynallon"></option>
+<option value="Zyncliix"></option>
+<option value="Zynheaex"></option>
+<option value="Zynotool"></option>
+<option value="Zyprexa"></option>
+<option value="Zyrtec"></option></datalist>
+
+<script>
+  let medCounter = 0;
+  const frequencyOptions = {
+    "1日1回": ["朝のみ", "昼のみ", "夜のみ"],
+    "1日2回": ["朝と夜", "朝と昼", "昼と夜"],
+    "1日3回": ["朝昼夜"],
+    "1日4回": ["朝昼晩夜"]
+  };
+  const medicineNames = new Set(["Dolo", "Azee", "Clavam"]);
+
+  function updateMedicineList() {
+    const datalist = document.getElementById("medicineList");
+    datalist.innerHTML = "";
+    medicineNames.forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      datalist.appendChild(opt);
+    });
+  }
+
+  function createMedicineRow(copyData = null) {
+    medCounter++;
+    const medDiv = document.createElement('div');
+    medDiv.className = 'medication';
+
+    medDiv.innerHTML = `
+      <div class="medication-number">${medCounter}.</div>
+      <div class="mb-2">
+        <input type="text" class="form-control med-name" placeholder="薬の名前" list="medicineList">
+      </div>
+      <div class="mb-2 d-flex align-items-center gap-2">
+        <div style="flex: 1;">
+          <select class="form-control med-type">
+            <option value="">薬の種類</option>
+            <option>抗生剤</option><option>抗ウィルス剤</option><option>解熱鎮痛剤</option><option>痛み止め</option>
+            <option>抗炎症剤</option><option>抗アレルギー剤</option><option>咳止め</option>
+            <option>カルシウム用</option><option>鼻詰まり用</option><option>風邪用</option>
+            <option>整腸剤</option><option>目薬</option><option>筋弛緩剤</option><option>高血圧症治療薬</option>
+            <option>塗り薬</option><option>保湿剤</option><option>ローション</option><option>シャンプー</option>
+            <option>糖尿病治療薬</option><option>ビタミン剤</option><option>点鼻薬</option><option>その他</option>
+          </select>
+          <input type="text" class="form-control med-type-other mt-2" placeholder="薬の種類を入力してください" style="display:none;">
+        </div>
+        <div class="form-check">
+          <input class="form-check-input med-prn" type="checkbox">
+          <label class="form-check-label">頓服用</label>
+        </div>
+      </div>
+
+      <div class="mb-2">
+        <select class="form-control med-form">
+          <option value="">薬の形状を選択</option>
+          <option value="tablet">錠剤</option>
+          <option value="syrup">シロップ</option>
+          <option value="drops">点眼/点耳</option>
+          <option value="spray">スプレー</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+
+      <div class="mb-2 d-flex flex-wrap gap-2 align-items-center dose-line">
+        <div id="dose-container" style="flex: 1 1 180px;"></div>
+        <select class="form-control med-frequency frequency-select" style="flex: 1 1 130px;">
+          <option value="">頻度</option>
+          <option>1日1回</option><option>1日2回</option><option>1日3回</option><option>1日4回</option>
+        </select>
+        <select class="form-control med-time time-detail-select" disabled style="flex: 1 1 130px;">
+          <option>服用タイミング</option>
+        </select>
+        <select class="form-control med-foodtiming" style="flex: 1 1 120px;">
+          <option value="">食前/後</option><option>食前後いつでも</option><option>食前</option><option>食後</option>
+        </select>
+        <input type="number" class="form-control med-duration-num" min="1" inputmode="numeric" placeholder="日数" style="flex: 1 1 60px;">
+        <select class="form-control med-duration-type" style="flex: 1 1 80px;">
+          <option value="">期間</option><option value="日間">日間</option><option value="週間">週間</option><option value="ヶ月間">ヶ月間</option>
+        </select>
+      </div>
+
+      <div class="mb-2">
+        <label class="form-label">※</label>
+        <select class="form-control med-note">
+          <option value="">選択してください</option>
+          <option>熱が37.5度以上がある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>患部のところにお使い下さい。</option>
+          <option>体の痛みがある場合だけお飲みください。続けてむ場合は6時間程お空け下さい。</option>
+          <option>患部の痛みがある場合だけお飲みください。続けてむ場合は6時間程お空け下さい。</option>
+          <option>頭痛がある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>熱が37.5度以上や体の痛みや頭痛がある場合お飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>患部の痛みがある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
+          <option>お水を混ぜて飲み始めてください。</option>
+          <option>Suspension Syrup薬の作り方手順：数回たたいて粉末をほぐし、沸騰させて冷やした水を加え、線まで水を加えて、ボトルを閉める。　ボトルを閉めて良く振り、均一にする。</option>
+          <option>患部の所だけにお塗りください。</option>
+        </select>
+      </div>
+
+      <div class="mb-2"><textarea class="form-control med-memo" rows="2" placeholder="メモ"></textarea></div>
+      <button class="btn btn-danger btn-sm btn-remove no-print">× 削除</button>
+      <button class="btn btn-info btn-sm btn-duplicate no-print">コピー</button>
+    `;
+
+    document.getElementById('medications').appendChild(medDiv);
+
+    const doseContainer = medDiv.querySelector('#dose-container');
+    const formSelect = medDiv.querySelector('.med-form');
+    const typeSelect = medDiv.querySelector('.med-type');
+    const typeOtherInput = medDiv.querySelector('.med-type-other');
+    const freqSelect = medDiv.querySelector('.frequency-select');
+    const timeSelect = medDiv.querySelector('.time-detail-select');
+
+    formSelect.addEventListener('change', () => updateDoseFields(formSelect, doseContainer));
+    typeSelect.addEventListener('change', () => {
+      if (typeSelect.value === "その他") {
+        typeOtherInput.style.display = "block";
+      } else {
+        typeOtherInput.style.display = "none";
+        typeOtherInput.value = "";
+      }
+    });
+
+    freqSelect.addEventListener('change', () => {
+      const options = frequencyOptions[freqSelect.value] || [];
+      timeSelect.innerHTML = "";
+      if (options.length) {
+        timeSelect.disabled = false;
+        options.forEach(opt => {
+          const o = document.createElement('option');
+          o.text = opt; timeSelect.add(o);
+        });
+      } else {
+        timeSelect.disabled = true;
+        timeSelect.innerHTML = "<option>服用タイミング</option>";
+      }
+    });
+
+    medDiv.querySelector('.btn-remove').addEventListener('click', () => {
+      medDiv.remove(); renumberMeds();
+    });
+    medDiv.querySelector('.btn-duplicate').addEventListener('click', () => duplicateMedicine(medDiv));
+
+    if (copyData) {
+      medDiv.querySelector('.med-name').value = copyData.name || "";
+      medDiv.querySelector('.med-type').value = copyData.type || "";
+      medDiv.querySelector('.med-type').dispatchEvent(new Event('change'));
+      if (copyData.type === "その他") medDiv.querySelector('.med-type-other').value = copyData.typeOther || "";
+      medDiv.querySelector('.med-prn').checked = !!copyData.prn;
+      formSelect.value = copyData.form || "";
+      formSelect.dispatchEvent(new Event('change'));
+      const doseEl = medDiv.querySelector('.med-dose');
+      if (doseEl) {
+        doseEl.value = copyData.doseOther ?? copyData.dose ?? "";
+      }
+      const areaEl = medDiv.querySelector('.med-dose-area');
+      if (areaEl) areaEl.value = copyData.area || "";
+      medDiv.querySelector('.frequency-select').value = copyData.freq || "";
+      medDiv.querySelector('.frequency-select').dispatchEvent(new Event('change'));
+      medDiv.querySelector('.time-detail-select').value = copyData.time || "";
+      medDiv.querySelector('.med-foodtiming').value = copyData.foodTiming || "";
+      medDiv.querySelector('.med-duration-num').value = copyData.durationNum || "";
+      medDiv.querySelector('.med-duration-type').value = copyData.durationType || "";
+      medDiv.querySelector('.med-note').value = copyData.note || "";
+      medDiv.querySelector('.med-memo').value = copyData.memo || "";
+    }
+
+    const medNameInput = medDiv.querySelector('.med-name');
+    medNameInput.addEventListener("change", () => {
+      const val = medNameInput.value.trim();
+      if (val && !medicineNames.has(val)) {
+        medicineNames.add(val); updateMedicineList();
+      }
+    });
+  }
+
+  function updateDoseFields(formSelect, doseContainer) {
+    doseContainer.innerHTML = '';
+    if (formSelect.value === 'tablet') {
+      doseContainer.innerHTML = `<select class="form-control med-dose"><option value="">用量を選択</option><option>1回1錠</option><option>1回半錠</option></select>`;
+    } else if (formSelect.value === 'syrup') {
+      doseContainer.innerHTML = `<div class="input-group"><span class="input-group-text">1回</span><input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric"><span class="input-group-text">ml</span></div>`;
+    } else if (formSelect.value === 'drops' || formSelect.value === 'spray') {
+      const label = formSelect.value === 'drops' ? 'ドロップ' : 'スプレー';
+      doseContainer.innerHTML = `
+        <div class="input-group mb-1">
+          <span class="input-group-text">1回</span>
+          <input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric">
+          <span class="input-group-text">${label}</span>
+        </div>
+        <select class="form-control med-dose-area">
+          <option>両目</option><option>左目</option><option>右目</option>
+          <option>両耳</option><option>左耳</option><option>右耳</option>
+          <option>両鼻</option><option>左鼻</option><option>右鼻</option>
+        </select>`;
+    } else if (formSelect.value === 'other') {
+      doseContainer.innerHTML = `<input type="text" class="form-control med-dose" placeholder="用量を入力してください">`;
+    } else {
+      doseContainer.innerHTML = '';
+    }
+  }
+
+  function duplicateMedicine(medDiv) {
+    const data = {
+      name: medDiv.querySelector('.med-name').value,
+      type: medDiv.querySelector('.med-type').value,
+      typeOther: medDiv.querySelector('.med-type-other')?.value || "",
+      prn: medDiv.querySelector('.med-prn').checked,
+      form: medDiv.querySelector('.med-form').value,
+      dose: medDiv.querySelector('.med-dose')?.value || "",
+      doseOther: medDiv.querySelector('.med-dose')?.value || "",
+      area: medDiv.querySelector('.med-dose-area')?.value || "",
+      freq: medDiv.querySelector('.frequency-select').value,
+      time: medDiv.querySelector('.time-detail-select').value,
+      foodTiming: medDiv.querySelector('.med-foodtiming').value,
+      durationNum: medDiv.querySelector('.med-duration-num').value,
+      durationType: medDiv.querySelector('.med-duration-type').value,
+      note: medDiv.querySelector('.med-note').value,
+      memo: medDiv.querySelector('.med-memo').value
+    };
+    createMedicineRow(data);
+  }
+
+  function renumberMeds() {
+    const numbers = document.querySelectorAll('.medication-number');
+    numbers.forEach((el, i) => el.textContent = (i + 1) + '.');
+    medCounter = numbers.length;
+  }
+
+  function validateMeds() {
+    let allValid = true;
+    document.querySelectorAll('.medication').forEach(med => {
+      med.classList.remove('incomplete');
+      const prn = med.querySelector('.med-prn')?.checked;
+      const nameVal = med.querySelector('.med-name')?.value.trim();
+      if (!nameVal) { med.classList.add('incomplete'); allValid = false; return; }
+      if (prn) return;
+    });
+    return allValid;
+  }
+
+  function buildText() {
+    let text = "処方されたお薬の飲み方・使い方\n\n";
+    document.querySelectorAll('.medication').forEach((med, idx) => {
+      const name = med.querySelector('.med-name').value.trim();
+      if (!name) return;
+
+      let type = med.querySelector('.med-type').value.trim();
+      const typeOtherEl = med.querySelector('.med-type-other');
+      const typeOther = typeOtherEl ? typeOtherEl.value.trim() : "";
+      if (type === "その他" && typeOther) {
+        type = typeOther;
+      }
+
+      const prn = med.querySelector('.med-prn').checked;
+      const formVal = med.querySelector('.med-form').value;
+      let dose = "";
+      let area = med.querySelector('.med-dose-area')?.value.trim() || "";
+
+      if (formVal === "syrup") {
+        const val = med.querySelector('.med-dose')?.value.trim();
+        if (val) dose = `1回${val}ml`;
+      } else if (formVal === "drops") {
+        const val = med.querySelector('.med-dose')?.value.trim();
+        if (val) dose = `1回${val}ドロップ`;
+      } else if (formVal === "spray") {
+        const val = med.querySelector('.med-dose')?.value.trim();
+        if (val) dose = `1回${val}スプレー`;
+      } else {
+        dose = med.querySelector('.med-dose')?.value.trim() || "";
+      }
+
+      if (dose && area) dose = `${dose}・${area}`;
+
+      const freq = med.querySelector('.frequency-select').value.trim();
+      const time = med.querySelector('.time-detail-select').value.trim();
+      const food = med.querySelector('.med-foodtiming').value.trim();
+      const durN = med.querySelector('.med-duration-num').value.trim();
+      const durT = med.querySelector('.med-duration-type').value.trim();
+      const note = med.querySelector('.med-note').value.trim();
+      const memo = med.querySelector('.med-memo').value.trim();
+
+      text += `${idx + 1}. ${name}\n`;
+      if (type) text += `${type}\n`;
+
+      if (prn) {
+        text += "※ 頓服用（必要時のみ服用）\n";
+        if (dose) text += `${dose}\n`;
+      } else {
+        const parts = [];
+        if (dose) parts.push(dose);
+        if (freq) parts.push(freq);
+        if (time && time !== "服用タイミング") parts.push(time);
+        if (food) parts.push(food);
+        if (durN && durT) parts.push(durN + durT);
+        if (parts.length) text += parts.join("・") + "\n";
+      }
+
+      if (note) text += "※ " + note + "\n";
+      if (memo) text += "メモ: " + memo + "\n";
+      text += "\n";
+    });
+    return text.trim();
+  }
+
+  // ✅ Copy with mobile fallback
+  function copyText() {
+    if (!validateMeds()) { alert("必須入力があります"); return; }
+    const text = buildText() + "\n\nご確認よろしくお願いいたします。";
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => alert("コピーしました！")).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+  function fallbackCopy(text) {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    try {
+      document.execCommand("copy");
+      alert("コピーしました！");
+    } catch (err) {
+      alert("コピーに失敗しました。手動でコピーしてください。");
+    }
+    document.body.removeChild(textarea);
+  }
+
+  // ✅ Print (works on mobile too)
+  document.getElementById("printBtn").addEventListener("click", () => {
+    if (!validateMeds()) return alert("必須入力があります");
+    const text = buildText() + "\n\nご確認よろしくお願いいたします。";
+    const htmlText = text.replace(/\n/g, "<br>");
+    const printWindow = window.open("", "", "height=600,width=800");
+    printWindow.document.write(`
+      <html><head><title>処方されたお薬の飲み方・使い方</title>
+      <style>body { font-family: 'Noto Sans JP', sans-serif; white-space: pre-wrap; }</style>
+      </head><body>${htmlText}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  });
+
+// --- Save as PDF (mobile & desktop safe, with footer) ---
+document.getElementById("pdfBtn").addEventListener("click", () => {
+  if (!validateMeds()) return alert("必須入力があります");
+
+  const text = buildText();
+
+  // Build wrapper
+  const wrapper = document.createElement("div");
+  wrapper.style.fontFamily = "'Noto Sans JP', sans-serif";
+  wrapper.style.width = "100%";
+  wrapper.style.padding = "20px";   // ensure footer not cut off
+  wrapper.style.boxSizing = "border-box";
+
+  // Main text
+  const mainDiv = document.createElement("div");
+  mainDiv.innerHTML = text.replace(/\n/g, "<br>");
+  wrapper.appendChild(mainDiv);
+
+  // ✅ Footer (separate block, normal weight)
+  const footer = document.createElement("div");
+  footer.style.marginTop = "30px";
+  footer.textContent = "ご確認よろしくお願いいたします。";
+  wrapper.appendChild(footer);
+
+  // Filename with date
+  const today = new Date().toISOString().split("T")[0];
+
+  // Generate PDF
+  html2pdf().set({
+    margin: 10,
+    filename: "prescription_" + today + ".pdf",
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
+  }).from(wrapper).save();
+});
+
+  // Event bindings
+  document.getElementById('copyBtn').addEventListener('click', copyText);
+  document.getElementById('addMed').addEventListener('click', () => createMedicineRow());
+
+  // init
+  createMedicineRow();
+</script>
+
+</body>
+</html>
