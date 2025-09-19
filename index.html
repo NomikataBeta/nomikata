@@ -3210,7 +3210,7 @@
   function updateDoseFields(formSelect, doseContainer) {
     doseContainer.innerHTML = '';
     if (formSelect.value === 'tablet') {
-      doseContainer.innerHTML = `<select class="form-control med-dose"><option value="">用量を選択</option><option>1回1錠</option><option>1回半錠</option></select>`;
+      doseContainer.innerHTML = `<select class="form-control med-dose"><option value="">用量を選択</option><option>1回1錠</option><option>1回半錠</option><option>1回2錠</option></select>`;
     } else if (formSelect.value === 'syrup') {
       doseContainer.innerHTML = `<div class="input-group"><span class="input-group-text">1回</span><input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric"><span class="input-group-text">ml</span></div>`;
     } else if (formSelect.value === 'drops' || formSelect.value === 'spray') {
@@ -3424,6 +3424,7 @@ document.getElementById("pdfBtn").addEventListener("click", () => {
 
 </body>
 </html>
+
 
 
 
