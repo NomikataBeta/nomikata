@@ -3272,8 +3272,8 @@
     return allValid;
   }
 
-  function buildText() {
-    let text = "処方されたお薬の飲み方・使い方\n\n";
+function buildText() {
+  let text = "平素よりお世話になっております。\n\n本日、処方されたお薬の飲み方・使い方は下記でございます。\n\n";
     document.querySelectorAll('.medication').forEach((med, idx) => {
       const name = med.querySelector('.med-name').value.trim();
       if (!name) return;
@@ -3424,6 +3424,7 @@ document.getElementById("pdfBtn").addEventListener("click", () => {
 
 </body>
 </html>
+
 
 
 
