@@ -1,3433 +1,383 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>平素よりお世話になっております。</title>
-  <title>本日、処方されたお薬の飲み方・使い方は下記でございます。</title>
-
-  <!-- Bootstrap -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
-
-  <!-- Japanese font -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP&display=swap" rel="stylesheet">
-
-  <!-- html2pdf.js (for PDF) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-  <style>
-    body { background-color: #f9f9f9; padding: 20px; font-family: 'Noto Sans JP', sans-serif; }
-    .prescription-box { background: white; padding: 20px; border-radius: 10px; }
-    .medication { border-bottom: 1px solid #ccc; margin-bottom: 20px; padding-bottom: 10px; }
-    .medication-number { font-weight: bold; }
-    .dose-line label { display: none; }
-    .invalid-input { border-color: red !important; box-shadow: 0 0 5px red !important; }
-    @media print { .no-print { display: none !important; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="処方されたお薬の飲み方・使い方をまとめて、コピー・印刷・PDF保存できます。">
+<title>お薬の飲み方・使い方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef2f5;--card:#fff;--ink:#1c2733;--mute:#5d6b78;--line:#d5dde4;--acc:#0f6e8c;--acc-d:#0b566e;--bad:#b3261e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "Noto Sans JP","Hiragino Sans","Yu Gothic",sans-serif}
+.wrap{max-width:820px;margin:0 auto;padding:20px 14px 60px}
+h1{font-size:1.35rem;line-height:1.5;margin:8px 0 18px}
+.greet{margin:8px 0 0}
+.med{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--acc);border-radius:8px;padding:14px;margin-bottom:14px}
+.med.bad{border-left-color:var(--bad)}
+.head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.num{font-size:1.1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:10px 0}
+.one{display:flex;flex-wrap:nowrap;gap:6px;margin:10px 0}
+.one>*{min-width:0;flex:1 1 0;text-overflow:ellipsis}
+.one>[data-f=time],.one>[data-f=food]{flex-grow:1.3}
+.one>[data-f=durN]{flex-grow:.8}
+.one>.dose{flex-grow:1.5;gap:4px}
+.dose:empty{display:none}
+.one>.dose>*{flex:1 1 40px;min-width:0}
+@media(max-width:600px){.one{gap:4px}.one>*,.one .dose>*{font-size:.78rem;padding:8px 2px 8px 5px}}
+.dose{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.dose>*{flex:1 1 90px}
+input,select,textarea{width:100%;font:inherit;padding:9px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);min-height:44px}
+input[type=checkbox]{width:22px;height:22px;min-height:0}
+textarea{resize:vertical}
+:focus-visible{outline:3px solid var(--acc);outline-offset:1px}
+select:disabled{background:#f1f4f6;color:#9aa6b1}
+.prn{display:flex;gap:8px;align-items:center;font-size:.95rem;cursor:pointer}
+.err{color:var(--bad);font-size:.9rem;margin:4px 0}
+button{font:inherit;min-height:44px;padding:8px 16px;border-radius:6px;border:1px solid var(--acc);background:#fff;color:var(--acc-d);cursor:pointer}
+button:hover{background:#e6f2f6}
+button.main{background:var(--acc);color:#fff}
+button.main:hover{background:var(--acc-d)}
+button.del{border-color:var(--bad);color:var(--bad)}
+.notewrap{display:flex;gap:8px}
+.notewrap select{flex:1;min-width:0}
+.notewrap button{flex:0 0 auto;white-space:nowrap;font-size:.9rem}
+dialog{width:min(680px,94vw);border:1px solid var(--line);border-radius:10px;padding:16px;color:var(--ink);max-height:90vh}
+dialog::backdrop{background:rgba(28,39,51,.5)}
+dialog h2{font-size:1.2rem;margin:0 0 4px}
+#noteList{max-height:55vh;overflow:auto;margin:10px 0}
+.nrow{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+.nrow textarea{flex:1}
+.acts{display:flex;gap:8px;margin-top:8px}
+.bar{position:sticky;bottom:0;background:var(--bg);padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)}
+.bar button{flex:1 1 120px}
+details{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:14px 0}
+#prevText{margin:8px 0;min-height:220px;line-height:1.8}
+.note{font-size:.88rem;color:var(--mute)}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw}
+#toast.on{opacity:1}
+#sheet{display:none}
+@media print{
+  body{background:#fff}
+  #app,#toast{display:none!important}
+  #sheet{display:block;font-size:12pt}
+  #sheet h1{font-size:16pt;border-bottom:2px solid #000;padding-bottom:4px}
+  #sheet .item{break-inside:avoid;border-bottom:1px solid #999;padding:8px 0}
+  #sheet .nm{font-weight:700;font-size:13pt}
+  #sheet .when{font-size:12pt}
+  #sheet .free{white-space:pre-wrap;line-height:1.9}
+  #sheet .disc{margin-top:16px;font-size:10pt}
+}
+@media(prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
 </head>
 <body>
+<div class="wrap" id="app">
+  <p class="greet">平素よりお世話になっております。</p>
+  <h1>本日、処方されたお薬の飲み方・使い方は下記でございます。</h1>
 
-<div class="container">
-  <h2 class="text-center mb-4">本日、処方されたお薬の飲み方・使い方は下記でございます。</h2>
+  <div id="meds"></div>
+  <button id="add" class="main" type="button">＋ 薬を追加</button>
 
-  <div class="prescription-box" id="prescription">
-    <div id="medications"></div>
-    <button class="btn btn-secondary btn-sm no-print mt-3" id="addMed">＋ 薬を追加</button>
-  </div>
+  <details id="prev"><summary>出力のプレビュー（編集できます）</summary>
+    <textarea id="prevText" rows="14" placeholder="薬の名前を入力すると、ここに表示されます。" aria-label="出力のプレビュー（編集できます）"></textarea>
+    <p class="note" id="customNote" hidden>手動で編集中です。この内容がコピー・印刷・PDFに使われ、上の入力を変えても上書きされません。</p>
+    <button type="button" id="resetText" hidden>入力内容から作り直す</button>
+  </details>
+  <p class="note">この表は参考用です。医師・薬剤師の指示が最優先です。</p>
 
-  <div class="text-center mt-4 no-print">
-    <button class="btn btn-primary me-2" id="copyBtn">テキストをコピー</button>
-    <button class="btn btn-success" id="printBtn">印刷</button>
-    <button class="btn btn-danger ms-2" id="pdfBtn">PDF保存</button>
+  <div class="bar">
+    <button id="copy" class="main" type="button">テキストをコピー</button>
+    <button id="print" type="button">印刷</button>
+    <button id="pdf" type="button">PDF保存</button>
+    <button id="clear" class="del" type="button">すべて消去</button>
   </div>
 </div>
 
-<datalist id="medicineList">
-<option value="A to Z">A to Z</option>
-<option value="A to Z"></option>
-  <option value="Accutane"></option>
-  <option value="Aciloc"></option>
-  <option value="Acitrom"></option>
-  <option value="Acyclovir"></option>
-  <option value="Adapalene"></option>
-  <option value="Adefovir"></option>
-  <option value="Aldactone"></option>
-  <option value="Allegra"></option>
-  <option value="Alleranter"></option>
-  <option value="Allerantix"></option>
-  <option value="Allercarol"></option>
-  <option value="Allercid"></option>
-  <option value="Allercilast"></option>
-  <option value="Allercligen"></option>
-  <option value="Allerfloex"></option>
-  <option value="Allergliex"></option>
-  <option value="Allerlipast"></option>
-  <option value="Allerlipex"></option>
-  <option value="Allermeder"></option>
-  <option value="Allermedo"></option>
-  <option value="Allermoxol"></option>
-  <option value="Allerneuast"></option>
-  <option value="Allerpedix"></option>
-  <option value="Allerprio"></option>
-  <option value="Allerquiex"></option>
-  <option value="Allerrexgen"></option>
-  <option value="Allerrexin"></option>
-  <option value="Allersafer"></option>
-  <option value="Allertid"></option>
-  <option value="Allertidast"></option>
-  <option value="Allertidol"></option>
-  <option value="Allervitin"></option>
-  <option value="Allerwela"></option>
-  <option value="Allerzinin"></option>
-  <option value="Allerzynex"></option>
-  <option value="Almox"></option>
-  <option value="Althrocin"></option>
-  <option value="Amaryl"></option>
-  <option value="Amlip"></option>
-  <option value="Amlodac"></option>
-  <option value="Amlong"></option>
-  <option value="Amphotericin"></option>
-  <option value="Antiballix"></option>
-  <option value="Antibcarol"></option>
-  <option value="Antibcilex"></option>
-  <option value="Antibclia"></option>
-  <option value="Antibcura"></option>
-  <option value="Antibgliex"></option>
-  <option value="Antibgluix"></option>
-  <option value="Antibgluol"></option>
-  <option value="Antibinfin"></option>
-  <option value="Antibioant"></option>
-  <option value="Antibiobioex"></option>
-  <option value="Antibiobiool"></option>
-  <option value="Antibiocarex"></option>
-  <option value="Antibiocarix"></option>
-  <option value="Antibiocaro"></option>
-  <option value="Antibiocefon"></option>
-  <option value="Antibiocila"></option>
-  <option value="Antibiocilol"></option>
-  <option value="Antibioclio"></option>
-  <option value="Antibioinfa"></option>
-  <option value="Antibiolip"></option>
-  <option value="Antibiomeder"></option>
-  <option value="Antibiomedo"></option>
-  <option value="Antibiomedon"></option>
-  <option value="Antibiomoxex"></option>
-  <option value="Antibiomoxol"></option>
-  <option value="Antibiomycol"></option>
-  <option value="Antibiomyogen"></option>
-  <option value="Antibioneoast"></option>
-  <option value="Antibioneuix"></option>
-  <option value="Antibioneuo"></option>
-  <option value="Antibionexin"></option>
-  <option value="Antibiootoin"></option>
-  <option value="Antibiophaon"></option>
-  <option value="Antibioplua"></option>
-  <option value="Antibiopriol"></option>
-  <option value="Antibioproast"></option>
-  <option value="Antibioproex"></option>
-  <option value="Antibioproin"></option>
-  <option value="Antibioreso"></option>
-  <option value="Antibioreson"></option>
-  <option value="Antibiosafa"></option>
-  <option value="Antibiosafol"></option>
-  <option value="Antibiosol"></option>
-  <option value="Antibiosola"></option>
-  <option value="Antibiostaix"></option>
-  <option value="Antibiosupgen"></option>
-  <option value="Antibiosurol"></option>
-  <option value="Antibiothea"></option>
-  <option value="Antibiotheex"></option>
-  <option value="Antibiothein"></option>
-  <option value="Antibioultin"></option>
-  <option value="Antibiovitgen"></option>
-  <option value="Antibioweler"></option>
-  <option value="Antibiozyngen"></option>
-  <option value="Antiblifo"></option>
-  <option value="Antiblipast"></option>
-  <option value="Antibmaxa"></option>
-  <option value="Antibmetast"></option>
-  <option value="Antibneogen"></option>
-  <option value="Antibnexin"></option>
-  <option value="Antibnexo"></option>
-  <option value="Antibnovol"></option>
-  <option value="Antibpedo"></option>
-  <option value="Antibphaol"></option>
-  <option value="Antibpluex"></option>
-  <option value="Antibpluin"></option>
-  <option value="Antibqui"></option>
-  <option value="Antibsafast"></option>
-  <option value="Antibsolin"></option>
-  <option value="Antibstaex"></option>
-  <option value="Antibulter"></option>
-  <option value="Antibvirex"></option>
-  <option value="Antibvirix"></option>
-  <option value="Antibvita"></option>
-  <option value="Antibvitast"></option>
-  <option value="Antibvitin"></option>
-  <option value="Antibviton"></option>
-  <option value="Antibzinix"></option>
-  <option value="Apixaban"></option>
-  <option value="Aprepitant"></option>
-  <option value="Arip"></option>
-  <option value="Arixtra"></option>
-  <option value="Ascoril"></option>
-  <option value="Asthalin"></option>
-  <option value="Atazanavir"></option>
-  <option value="Atenolol"></option>
-  <option value="Atocor"></option>
-  <option value="Atorfit"></option>
-  <option value="Atorlip"></option>
-  <option value="Augmentin"></option>
-  <option value="Augpen"></option>
-  <option value="Avil"></option>
-  <option value="Avodart"></option>
-  <option value="Azax"></option>
-  <option value="Azee"></option>
-  <option value="Azibact"></option>
-  <option value="Azibact-L"></option>
-  <option value="Azibest"></option>
-  <option value="Azicip"></option>
-  <option value="Aziklar"></option>
-  <option value="Azimax"></option>
-  <option value="Azitec"></option>
-  <option value="Azithral"></option>
-  <option value="Aztor"></option>
-  <option value="Aztor ASP"></option>
-  <option value="Bactrim"></option>
-  <option value="Bactroban"></option>
-  <option value="Becosules"></option>
-  <option value="Benadryl"></option>
-  <option value="Benzac AC"></option>
-  <option value="Betacard"></option>
-  <option value="Betadine"></option>
-  <option value="Betadine Antiseptic"></option>
-  <option value="Betnovate"></option>
-  <option value="Biktarvy"></option>
-  <option value="Bioantol"></option>
-  <option value="Biocefol"></option>
-  <option value="Biocider"></option>
-  <option value="Biocidol"></option>
-  <option value="Biociler"></option>
-  <option value="Biocurer"></option>
-  <option value="Biofasa"></option>
-  <option value="Biofasex"></option>
-  <option value="Bioflool"></option>
-  <option value="Biogasol"></option>
-  <option value="Biogason"></option>
-  <option value="Biogluol"></option>
-  <option value="Bioheaex"></option>
-  <option value="Bioheagen"></option>
-  <option value="Biomaxin"></option>
-  <option value="Biomeder"></option>
-  <option value="Biomedix"></option>
-  <option value="Biometex"></option>
-  <option value="Biometo"></option>
-  <option value="Biomoxex"></option>
-  <option value="Bioneoa"></option>
-  <option value="Bioneool"></option>
-  <option value="Bioneuin"></option>
-  <option value="Bionovol"></option>
-  <option value="Bioophix"></option>
-  <option value="Biopeder"></option>
-  <option value="Biopedol"></option>
-  <option value="Biophagen"></option>
-  <option value="Biopluast"></option>
-  <option value="Biopluer"></option>
-  <option value="Biopri"></option>
-  <option value="Bioquigen"></option>
-  <option value="Bioquio"></option>
-  <option value="Bioquion"></option>
-  <option value="Bioresol"></option>
-  <option value="Biorexer"></option>
-  <option value="Biosafast"></option>
-  <option value="Biosafon"></option>
-  <option value="Biosupol"></option>
-  <option value="Biozyno"></option>
-  <option value="Bisacodyl"></option>
-  <option value="Biselect"></option>
-  <option value="Bisoprolol"></option>
-  <option value="Boost"></option>
-  <option value="Bournvita"></option>
-  <option value="Brufen"></option>
-  <option value="Budecort"></option>
-  <option value="Calamine"></option>
-  <option value="Calcimax"></option>
-  <option value="Calpol"></option>
-  <option value="Calpol Advance"></option>
-  <option value="Candid"></option>
-  <option value="Canesten"></option>
-  <option value="Cardace"></option>
-  <option value="Cardioaller"></option>
-  <option value="Cardiobioon"></option>
-  <option value="Cardiocidex"></option>
-  <option value="Cardiocidol"></option>
-  <option value="Cardiocil"></option>
-  <option value="Cardiocliast"></option>
-  <option value="Cardiocur"></option>
-  <option value="Cardiocuron"></option>
-  <option value="Cardiofasix"></option>
-  <option value="Cardiogluer"></option>
-  <option value="Cardiogluo"></option>
-  <option value="Cardioheaer"></option>
-  <option value="Cardioheaol"></option>
-  <option value="Cardiomedin"></option>
-  <option value="Cardiomedix"></option>
-  <option value="Cardiomedo"></option>
-  <option value="Cardiomoxix"></option>
-  <option value="Cardiomyca"></option>
-  <option value="Cardioneo"></option>
-  <option value="Cardionexast"></option>
-  <option value="Cardionexol"></option>
-  <option value="Cardionovin"></option>
-  <option value="Cardiootoon"></option>
-  <option value="Cardioplu"></option>
-  <option value="Cardioqui"></option>
-  <option value="Cardioquier"></option>
-  <option value="Cardiorexer"></option>
-  <option value="Cardiosurin"></option>
-  <option value="Cardiothegen"></option>
-  <option value="Cardioulter"></option>
-  <option value="Cardiovirex"></option>
-  <option value="Cardiovit"></option>
-  <option value="Cardiovitast"></option>
-  <option value="Cardiowel"></option>
-  <option value="Cardiozinex"></option>
-  <option value="Cardiozinon"></option>
-  <option value="Careallix"></option>
-  <option value="Careallol"></option>
-  <option value="Careant"></option>
-  <option value="Carecarer"></option>
-  <option value="Carecarix"></option>
-  <option value="Carecarol"></option>
-  <option value="Carecefex"></option>
-  <option value="Carecliast"></option>
-  <option value="Carecliol"></option>
-  <option value="Carecurast"></option>
-  <option value="Carecurer"></option>
-  <option value="Carecurol"></option>
-  <option value="Carederon"></option>
-  <option value="Caregasa"></option>
-  <option value="Carehea"></option>
-  <option value="Careheaa"></option>
-  <option value="Careheain"></option>
-  <option value="Careheaix"></option>
-  <option value="Carelif"></option>
-  <option value="Caremaxin"></option>
-  <option value="Caremeda"></option>
-  <option value="Caremedin"></option>
-  <option value="Caremeter"></option>
-  <option value="Caremoxin"></option>
-  <option value="Caremyoo"></option>
-  <option value="Careneoex"></option>
-  <option value="Careneu"></option>
-  <option value="Carenexix"></option>
-  <option value="Carenovo"></option>
-  <option value="Careotoa"></option>
-  <option value="Careotoo"></option>
-  <option value="Carepeda"></option>
-  <option value="Carepedast"></option>
-  <option value="Carepedgen"></option>
-  <option value="Carephagen"></option>
-  <option value="Carepluin"></option>
-  <option value="Careprier"></option>
-  <option value="Careproin"></option>
-  <option value="Carereser"></option>
-  <option value="Carerexex"></option>
-  <option value="Caresuro"></option>
-  <option value="Caretheast"></option>
-  <option value="Caretheer"></option>
-  <option value="Carewelix"></option>
-  <option value="Carvedilol"></option>
-  <option value="Caspofungin"></option>
-  <option value="Cefaclor"></option>
-  <option value="Cefadroxil"></option>
-  <option value="Cefanter"></option>
-  <option value="Cefcar"></option>
-  <option value="Cefcarix"></option>
-  <option value="Cefcila"></option>
-  <option value="Cefcurast"></option>
-  <option value="Cefdinir"></option>
-  <option value="Cefepime"></option>
-  <option value="Cefgaser"></option>
-  <option value="Cefglua"></option>
-  <option value="Cefheaa"></option>
-  <option value="Cefheaol"></option>
-  <option value="Cefheaon"></option>
-  <option value="Cefinfo"></option>
-  <option value="Cefixime"></option>
-  <option value="Ceflifin"></option>
-  <option value="Ceflip"></option>
-  <option value="Ceflipex"></option>
-  <option value="Ceflipo"></option>
-  <option value="Cefmedex"></option>
-  <option value="Cefmedgen"></option>
-  <option value="Cefmoxer"></option>
-  <option value="Cefmoxgen"></option>
-  <option value="Cefmyoex"></option>
-  <option value="Cefmyool"></option>
-  <option value="Cefneoer"></option>
-  <option value="Cefneoo"></option>
-  <option value="Cefnexin"></option>
-  <option value="Cefoperazone"></option>
-  <option value="Cefophol"></option>
-  <option value="Cefotaxime"></option>
-  <option value="Cefphaer"></option>
-  <option value="Cefphao"></option>
-  <option value="Cefpluon"></option>
-  <option value="Cefproa"></option>
-  <option value="Cefprool"></option>
-  <option value="Cefresin"></option>
-  <option value="Cefresix"></option>
-  <option value="Cefrexa"></option>
-  <option value="Cefsaf"></option>
-  <option value="Cefspan"></option>
-  <option value="Cefstaer"></option>
-  <option value="Cefstaex"></option>
-  <option value="Cefsupol"></option>
-  <option value="Ceftheix"></option>
-  <option value="Ceftriaxone"></option>
-  <option value="Ceftum"></option>
-  <option value="Cefuroxime"></option>
-  <option value="Cefvirast"></option>
-  <option value="Cefvirex"></option>
-  <option value="Cefzinix"></option>
-  <option value="Celin"></option>
-  <option value="Cetaphil"></option>
-  <option value="Cetapin"></option>
-  <option value="Cetzine"></option>
-  <option value="Cetzine M"></option>
-  <option value="Chericof"></option>
-  <option value="Chloramphenicol"></option>
-  <option value="Cidaantex"></option>
-  <option value="Cidaantix"></option>
-  <option value="Cidaantol"></option>
-  <option value="Cidaanton"></option>
-  <option value="Cidacaro"></option>
-  <option value="Cidacarol"></option>
-  <option value="Cidacido"></option>
-  <option value="Cidacilex"></option>
-  <option value="Cidacurer"></option>
-  <option value="Cidacurex"></option>
-  <option value="Cidacurgen"></option>
-  <option value="Cidacuron"></option>
-  <option value="Cidaderon"></option>
-  <option value="Cidafasast"></option>
-  <option value="Cidagasix"></option>
-  <option value="Cidagluast"></option>
-  <option value="Cidaheaast"></option>
-  <option value="Cidaheaol"></option>
-  <option value="Cidainfol"></option>
-  <option value="Cidalifa"></option>
-  <option value="Cidalifast"></option>
-  <option value="Cidalifer"></option>
-  <option value="Cidaliper"></option>
-  <option value="Cidamaxol"></option>
-  <option value="Cidamedex"></option>
-  <option value="Cidamedo"></option>
-  <option value="Cidameter"></option>
-  <option value="Cidamoxgen"></option>
-  <option value="Cidamycin"></option>
-  <option value="Cidamyoa"></option>
-  <option value="Cidanexgen"></option>
-  <option value="Cidaotoin"></option>
-  <option value="Cidaotoo"></option>
-  <option value="Cidapedin"></option>
-  <option value="Cidaphaa"></option>
-  <option value="Cidaphaol"></option>
-  <option value="Cidapluol"></option>
-  <option value="Cidapriin"></option>
-  <option value="Cidaprio"></option>
-  <option value="Cidaquiol"></option>
-  <option value="Cidastaer"></option>
-  <option value="Cidasup"></option>
-  <option value="Cidasurex"></option>
-  <option value="Cidatid"></option>
-  <option value="Cidault"></option>
-  <option value="Cifran"></option>
-  <option value="Cillinall"></option>
-  <option value="Cillinallon"></option>
-  <option value="Cillinbioix"></option>
-  <option value="Cillinbiool"></option>
-  <option value="Cillincara"></option>
-  <option value="Cillincarer"></option>
-  <option value="Cillincarex"></option>
-  <option value="Cillincefix"></option>
-  <option value="Cillincefol"></option>
-  <option value="Cillincil"></option>
-  <option value="Cillincliast"></option>
-  <option value="Cillincliol"></option>
-  <option value="Cillincurol"></option>
-  <option value="Cillincuron"></option>
-  <option value="Cillinderin"></option>
-  <option value="Cillindero"></option>
-  <option value="Cillinfasast"></option>
-  <option value="Cillinfasgen"></option>
-  <option value="Cillinfaso"></option>
-  <option value="Cillinfloin"></option>
-  <option value="Cillingasol"></option>
-  <option value="Cillinglia"></option>
-  <option value="Cillingligen"></option>
-  <option value="Cillingliol"></option>
-  <option value="Cillingluer"></option>
-  <option value="Cillinheao"></option>
-  <option value="Cillinlifon"></option>
-  <option value="Cillinlipgen"></option>
-  <option value="Cillinmed"></option>
-  <option value="Cillinmeder"></option>
-  <option value="Cillinmedix"></option>
-  <option value="Cillinmedol"></option>
-  <option value="Cillinmetol"></option>
-  <option value="Cillinmeton"></option>
-  <option value="Cillinmoxer"></option>
-  <option value="Cillinmoxol"></option>
-  <option value="Cillinmyogen"></option>
-  <option value="Cillinneogen"></option>
-  <option value="Cillinneoon"></option>
-  <option value="Cillinneuer"></option>
-  <option value="Cillinneuol"></option>
-  <option value="Cillinnexin"></option>
-  <option value="Cillinnovex"></option>
-  <option value="Cillinophgen"></option>
-  <option value="Cillinpluex"></option>
-  <option value="Cillinpluol"></option>
-  <option value="Cillinpriol"></option>
-  <option value="Cillinproer"></option>
-  <option value="Cillinquiast"></option>
-  <option value="Cillinresast"></option>
-  <option value="Cillinrexer"></option>
-  <option value="Cillinsafast"></option>
-  <option value="Cillinsolast"></option>
-  <option value="Cillinstaol"></option>
-  <option value="Cillinsupin"></option>
-  <option value="Cillintheix"></option>
-  <option value="Cillintheol"></option>
-  <option value="Cillintida"></option>
-  <option value="Cillinviron"></option>
-  <option value="Cillinvitol"></option>
-  <option value="Cillinziner"></option>
-  <option value="Cillinzyner"></option>
-  <option value="Ciplox"></option>
-  <option value="Ciplox Eye"></option>
-  <option value="Ciprobid"></option>
-  <option value="Clarithro"></option>
-  <option value="Clavam"></option>
-  <option value="Clavam Dry"></option>
-  <option value="Clexane"></option>
-  <option value="Clinallol"></option>
-  <option value="Clinantast"></option>
-  <option value="Clinantin"></option>
-  <option value="Clincarix"></option>
-  <option value="Clincarol"></option>
-  <option value="Clincaron"></option>
-  <option value="Clincidast"></option>
-  <option value="Clincura"></option>
-  <option value="Clincuro"></option>
-  <option value="Clindac"></option>
-  <option value="Clindamycin"></option>
-  <option value="Clinderin"></option>
-  <option value="Clinfasix"></option>
-  <option value="Clinglio"></option>
-  <option value="Clinglion"></option>
-  <option value="Clingluon"></option>
-  <option value="Clinheaast"></option>
-  <option value="Clininfgen"></option>
-  <option value="Clinlipgen"></option>
-  <option value="Clinlipo"></option>
-  <option value="Clinmedex"></option>
-  <option value="Clinmeto"></option>
-  <option value="Clinmetol"></option>
-  <option value="Clinmoxo"></option>
-  <option value="Clinmycol"></option>
-  <option value="Clinmyoix"></option>
-  <option value="Clinmyoo"></option>
-  <option value="Clinneuer"></option>
-  <option value="Clinneuo"></option>
-  <option value="Clinneuol"></option>
-  <option value="Clinnexast"></option>
-  <option value="Clinophix"></option>
-  <option value="Clinophon"></option>
-  <option value="Clinphaix"></option>
-  <option value="Clinpria"></option>
-  <option value="Clinquiin"></option>
-  <option value="Clinreser"></option>
-  <option value="Clinsafex"></option>
-  <option value="Clinsola"></option>
-  <option value="Clintheo"></option>
-  <option value="Clintidex"></option>
-  <option value="Clinvirex"></option>
-  <option value="Clinvirgen"></option>
-  <option value="Clinvirol"></option>
-  <option value="Clinzina"></option>
-  <option value="Clobetasol Propionate"></option>
-  <option value="Clopid"></option>
-  <option value="Clopilet"></option>
-  <option value="Clopitab"></option>
-  <option value="Clopivas"></option>
-  <option value="Clopivas AP"></option>
-  <option value="Clotrim"></option>
-  <option value="Cloxacillin"></option>
-  <option value="Colistin"></option>
-  <option value="Combiflam"></option>
-  <option value="Concor"></option>
-  <option value="Corex"></option>
-  <option value="Cresar"></option>
-  <option value="Crocin"></option>
-  <option value="Cureantast"></option>
-  <option value="Cureantgen"></option>
-  <option value="Cureanto"></option>
-  <option value="Curebioer"></option>
-  <option value="Curebioin"></option>
-  <option value="Curecarast"></option>
-  <option value="Curecargen"></option>
-  <option value="Curecarol"></option>
-  <option value="Curecil"></option>
-  <option value="Curecilon"></option>
-  <option value="Curederer"></option>
-  <option value="Curederix"></option>
-  <option value="Curefloo"></option>
-  <option value="Curegasin"></option>
-  <option value="Cureglia"></option>
-  <option value="Curegluin"></option>
-  <option value="Cureheaer"></option>
-  <option value="Curemedol"></option>
-  <option value="Curemetex"></option>
-  <option value="Curemycer"></option>
-  <option value="Curemycol"></option>
-  <option value="Cureneoin"></option>
-  <option value="Cureneoon"></option>
-  <option value="Curenover"></option>
-  <option value="Cureophast"></option>
-  <option value="Cureophgen"></option>
-  <option value="Cureotoer"></option>
-  <option value="Cureotool"></option>
-  <option value="Curephaix"></option>
-  <option value="Curepriol"></option>
-  <option value="Curerexex"></option>
-  <option value="Curerexol"></option>
-  <option value="Curesupol"></option>
-  <option value="Curesupon"></option>
-  <option value="Curevirex"></option>
-  <option value="Curevitast"></option>
-  <option value="Curevitol"></option>
-  <option value="Curewelast"></option>
-  <option value="Curewelgen"></option>
-  <option value="Curexallgen"></option>
-  <option value="Curexantast"></option>
-  <option value="Curexantex"></option>
-  <option value="Curexbioa"></option>
-  <option value="Curexcidin"></option>
-  <option value="Curexcilon"></option>
-  <option value="Curexclia"></option>
-  <option value="Curexfasol"></option>
-  <option value="Curexfason"></option>
-  <option value="Curexflogen"></option>
-  <option value="Curexgason"></option>
-  <option value="Curexheain"></option>
-  <option value="Curexmeder"></option>
-  <option value="Curexmedin"></option>
-  <option value="Curexmycast"></option>
-  <option value="Curexmycol"></option>
-  <option value="Curexneool"></option>
-  <option value="Curexnexin"></option>
-  <option value="Curexnova"></option>
-  <option value="Curexnovgen"></option>
-  <option value="Curexnovin"></option>
-  <option value="Curexophgen"></option>
-  <option value="Curexotoast"></option>
-  <option value="Curexphaer"></option>
-  <option value="Curexphain"></option>
-  <option value="Curexprio"></option>
-  <option value="Curexquiex"></option>
-  <option value="Curexquigen"></option>
-  <option value="Curexrexast"></option>
-  <option value="Curexsafast"></option>
-  <option value="Curexsolix"></option>
-  <option value="Curextidex"></option>
-  <option value="Curexvirer"></option>
-  <option value="Curexvirol"></option>
-  <option value="Curexwelex"></option>
-  <option value="Curexwelol"></option>
-  <option value="Curexzyn"></option>
-  <option value="Curexzyngen"></option>
-  <option value="Curexzyno"></option>
-  <option value="Curezin"></option>
-  <option value="Curezina"></option>
-  <option value="Cureziner"></option>
-  <option value="Darunavir"></option>
-  <option value="Depakote"></option>
-  <option value="Dermallo"></option>
-  <option value="Dermantex"></option>
-  <option value="Dermantol"></option>
-  <option value="Dermbioin"></option>
-  <option value="Dermbioon"></option>
-  <option value="Dermcarix"></option>
-  <option value="Dermcef"></option>
-  <option value="Dermcidast"></option>
-  <option value="Dermcliin"></option>
-  <option value="Dermcuro"></option>
-  <option value="Dermdero"></option>
-  <option value="Dermfaser"></option>
-  <option value="Dermgasa"></option>
-  <option value="Dermglia"></option>
-  <option value="Derminfon"></option>
-  <option value="Dermlifix"></option>
-  <option value="Dermlipix"></option>
-  <option value="Dermlipol"></option>
-  <option value="Dermmax"></option>
-  <option value="Dermmaxex"></option>
-  <option value="Dermmaxo"></option>
-  <option value="Dermmeda"></option>
-  <option value="Dermmedol"></option>
-  <option value="Dermmoxa"></option>
-  <option value="Dermmycex"></option>
-  <option value="Dermmycon"></option>
-  <option value="Dermneoin"></option>
-  <option value="Dermnexer"></option>
-  <option value="Dermnexgen"></option>
-  <option value="Dermnovon"></option>
-  <option value="Dermoph"></option>
-  <option value="Dermopher"></option>
-  <option value="Dermophin"></option>
-  <option value="Dermpluin"></option>
-  <option value="Dermpluon"></option>
-  <option value="Dermpriex"></option>
-  <option value="Dermpro"></option>
-  <option value="Dermprogen"></option>
-  <option value="Dermquion"></option>
-  <option value="Dermsaf"></option>
-  <option value="Dermstaa"></option>
-  <option value="Dermstaol"></option>
-  <option value="Dermstaon"></option>
-  <option value="Dermsupon"></option>
-  <option value="Dermsurast"></option>
-  <option value="Dermtheol"></option>
-  <option value="Dermtheon"></option>
-  <option value="Dermultex"></option>
-  <option value="Dermzinast"></option>
-  <option value="Dettol"></option>
-  <option value="Dexilant"></option>
-  <option value="Dexorange"></option>
-  <option value="Diclomol"></option>
-  <option value="Differin"></option>
-  <option value="Diflucan"></option>
-  <option value="Dilzem"></option>
-  <option value="Dolo-650"></option>
-  <option value="Dolokind"></option>
-  <option value="Dolokind MR"></option>
-  <option value="Dolopar"></option>
-  <option value="Dolutegravir"></option>
-  <option value="Domperidone"></option>
-  <option value="Domstal"></option>
-  <option value="Doxycycline"></option>
-  <option value="Dulcolax"></option>
-  <option value="Duphalac"></option>
-  <option value="Duricef"></option>
-  <option value="Dutasteride"></option>
-  <option value="Ecosprin"></option>
-  <option value="Ecosprin AV"></option>
-  <option value="Edoxaban"></option>
-  <option value="Efavirenz"></option>
-  <option value="Elidel"></option>
-  <option value="Eliquis"></option>
-  <option value="Elocon"></option>
-  <option value="Elovera"></option>
-  <option value="Eltroxin"></option>
-  <option value="Emeset"></option>
-  <option value="Ensure"></option>
-  <option value="Entacavir"></option>
-  <option value="Entecavir"></option>
-  <option value="Epilim"></option>
-  <option value="Ertapenem"></option>
-  <option value="Erythrocin"></option>
-  <option value="Esomac"></option>
-  <option value="Esomac D"></option>
-  <option value="Esose"></option>
-  <option value="Etizola"></option>
-  <option value="Etoricoxib"></option>
-  <option value="Etoshine"></option>
-  <option value="Etoshine MR"></option>
-  <option value="Evion"></option>
-  <option value="Evotaz"></option>
-  <option value="Famciclovir"></option>
-  <option value="Famocid"></option>
-  <option value="Famotidine"></option>
-  <option value="Fastallin"></option>
-  <option value="Fastallol"></option>
-  <option value="Fastantgen"></option>
-  <option value="Fastbioa"></option>
-  <option value="Fastcar"></option>
-  <option value="Fastcarer"></option>
-  <option value="Fastcargen"></option>
-  <option value="Fastcidast"></option>
-  <option value="Fastclia"></option>
-  <option value="Fastcur"></option>
-  <option value="Fastcurast"></option>
-  <option value="Fastcurgen"></option>
-  <option value="Fastder"></option>
-  <option value="Fastdera"></option>
-  <option value="Fastglier"></option>
-  <option value="Fastgliol"></option>
-  <option value="Fastglion"></option>
-  <option value="Fastheaa"></option>
-  <option value="Fastheaix"></option>
-  <option value="Fastheaol"></option>
-  <option value="Fastheaon"></option>
-  <option value="Fastinfast"></option>
-  <option value="Fastinfol"></option>
-  <option value="Fastmaxin"></option>
-  <option value="Fastmaxon"></option>
-  <option value="Fastmeder"></option>
-  <option value="Fastmedgen"></option>
-  <option value="Fastmedo"></option>
-  <option value="Fastmedol"></option>
-  <option value="Fastmetex"></option>
-  <option value="Fastmoxast"></option>
-  <option value="Fastmyoo"></option>
-  <option value="Fastmyool"></option>
-  <option value="Fastnovast"></option>
-  <option value="Fastophol"></option>
-  <option value="Fastotoin"></option>
-  <option value="Fastphaa"></option>
-  <option value="Fastquia"></option>
-  <option value="Fastquigen"></option>
-  <option value="Fastresix"></option>
-  <option value="Fastreso"></option>
-  <option value="Fastreson"></option>
-  <option value="Fastsurex"></option>
-  <option value="Fasttheon"></option>
-  <option value="Fasttidgen"></option>
-  <option value="Fastvirol"></option>
-  <option value="Fastvito"></option>
-  <option value="Fastvitol"></option>
-  <option value="Fastwelol"></option>
-  <option value="Fastzinin"></option>
-  <option value="Favipiravir"></option>
-  <option value="Febrex"></option>
-  <option value="Fexova"></option>
-  <option value="Finax"></option>
-  <option value="Fincar"></option>
-  <option value="Finpecia"></option>
-  <option value="Flagyl"></option>
-  <option value="Flexura"></option>
-  <option value="Floxant"></option>
-  <option value="Floxanton"></option>
-  <option value="Floxcurgen"></option>
-  <option value="Floxheaa"></option>
-  <option value="Floxinfgen"></option>
-  <option value="Floxinfix"></option>
-  <option value="Floxlipgen"></option>
-  <option value="Floxmaxol"></option>
-  <option value="Floxmedix"></option>
-  <option value="Floxmedol"></option>
-  <option value="Floxmetix"></option>
-  <option value="Floxmyoo"></option>
-  <option value="Floxmyool"></option>
-  <option value="Floxneoix"></option>
-  <option value="Floxneoo"></option>
-  <option value="Floxneuol"></option>
-  <option value="Floxnexer"></option>
-  <option value="Floxopher"></option>
-  <option value="Floxotoer"></option>
-  <option value="Floxpluex"></option>
-  <option value="Floxpluol"></option>
-  <option value="Floxrexer"></option>
-  <option value="Floxsoler"></option>
-  <option value="Floxsolgen"></option>
-  <option value="Floxsurol"></option>
-  <option value="Floxthe"></option>
-  <option value="Floxtheix"></option>
-  <option value="Floxtheol"></option>
-  <option value="Floxvirex"></option>
-  <option value="Floxviro"></option>
-  <option value="Floxviton"></option>
-  <option value="Floxzyner"></option>
-  <option value="Fluconazole"></option>
-  <option value="Flur Eye"></option>
-  <option value="Folvite"></option>
-  <option value="Fondaparinux"></option>
-  <option value="Foracort"></option>
-  <option value="Fucidin"></option>
-  <option value="Galvus"></option>
-  <option value="Gastrobioin"></option>
-  <option value="Gastrocarin"></option>
-  <option value="Gastrocidgen"></option>
-  <option value="Gastrocidon"></option>
-  <option value="Gastrocilgen"></option>
-  <option value="Gastrocliex"></option>
-  <option value="Gastroclion"></option>
-  <option value="Gastrocur"></option>
-  <option value="Gastrocura"></option>
-  <option value="Gastrocurol"></option>
-  <option value="Gastrocuron"></option>
-  <option value="Gastroderast"></option>
-  <option value="Gastrogaser"></option>
-  <option value="Gastroglia"></option>
-  <option value="Gastroheaer"></option>
-  <option value="Gastroinfast"></option>
-  <option value="Gastroinfex"></option>
-  <option value="Gastrolifer"></option>
-  <option value="Gastrolifix"></option>
-  <option value="Gastromaxer"></option>
-  <option value="Gastromaxgen"></option>
-  <option value="Gastromaxol"></option>
-  <option value="Gastromeder"></option>
-  <option value="Gastromedex"></option>
-  <option value="Gastrometin"></option>
-  <option value="Gastrometol"></option>
-  <option value="Gastromyca"></option>
-  <option value="Gastroneuol"></option>
-  <option value="Gastroopher"></option>
-  <option value="Gastroophex"></option>
-  <option value="Gastrootoex"></option>
-  <option value="Gastrophaex"></option>
-  <option value="Gastroplu"></option>
-  <option value="Gastroplugen"></option>
-  <option value="Gastropluo"></option>
-  <option value="Gastropri"></option>
-  <option value="Gastrorexast"></option>
-  <option value="Gastrorexol"></option>
-  <option value="Gastrorexon"></option>
-  <option value="Gastrosaf"></option>
-  <option value="Gastrosafast"></option>
-  <option value="Gastrosolgen"></option>
-  <option value="Gastrosolin"></option>
-  <option value="Gastrosolo"></option>
-  <option value="Gastrosuper"></option>
-  <option value="Gastrosupol"></option>
-  <option value="Gastrosurer"></option>
-  <option value="Gastroult"></option>
-  <option value="Gastroultin"></option>
-  <option value="Gastrovirex"></option>
-  <option value="Gastrovirol"></option>
-  <option value="Gastrovitol"></option>
-  <option value="Gastrozinix"></option>
-  <option value="Gastrozinon"></option>
-  <option value="Gatifloxacin Eye"></option>
-  <option value="Genvoya"></option>
-  <option value="Glibbio"></option>
-  <option value="Glibbiool"></option>
-  <option value="Glibcar"></option>
-  <option value="Glibcid"></option>
-  <option value="Glibcur"></option>
-  <option value="Glibderix"></option>
-  <option value="Glibflogen"></option>
-  <option value="Glibhea"></option>
-  <option value="Glibheaix"></option>
-  <option value="Glibheaol"></option>
-  <option value="Glibinfgen"></option>
-  <option value="Gliblifo"></option>
-  <option value="Gliblip"></option>
-  <option value="Glibmaxin"></option>
-  <option value="Glibmedast"></option>
-  <option value="Glibmedix"></option>
-  <option value="Glibmetin"></option>
-  <option value="Glibneoast"></option>
-  <option value="Glibneuer"></option>
-  <option value="Glibneuol"></option>
-  <option value="Glibnexex"></option>
-  <option value="Glibophgen"></option>
-  <option value="Gliboto"></option>
-  <option value="Glibproin"></option>
-  <option value="Glibultol"></option>
-  <option value="Glibvir"></option>
-  <option value="Glibvirgen"></option>
-  <option value="Glibvirin"></option>
-  <option value="Glibvito"></option>
-  <option value="Glibwela"></option>
-  <option value="Glibzyna"></option>
-  <option value="Gliclazide"></option>
-  <option value="Glimepiride"></option>
-  <option value="Glipizide"></option>
-  <option value="Glucerna"></option>
-  <option value="Glucoant"></option>
-  <option value="Glucocefin"></option>
-  <option value="Glucocilex"></option>
-  <option value="Glucofasin"></option>
-  <option value="Glucofloix"></option>
-  <option value="Glucogas"></option>
-  <option value="Glucogliex"></option>
-  <option value="Glucogliix"></option>
-  <option value="Glucogluex"></option>
-  <option value="Glucoheaix"></option>
-  <option value="Glucoheaol"></option>
-  <option value="Glucolifa"></option>
-  <option value="Glucolifex"></option>
-  <option value="Glucomed"></option>
-  <option value="Glucometex"></option>
-  <option value="Glucomoxgen"></option>
-  <option value="Glucomycast"></option>
-  <option value="Gluconeugen"></option>
-  <option value="Gluconexast"></option>
-  <option value="Gluconexer"></option>
-  <option value="Gluconexix"></option>
-  <option value="Gluconexon"></option>
-  <option value="Gluconorm"></option>
-  <option value="Glucoophin"></option>
-  <option value="Glucoophix"></option>
-  <option value="Glucoophol"></option>
-  <option value="Glucophaix"></option>
-  <option value="Glucoresgen"></option>
-  <option value="Glucorexer"></option>
-  <option value="Glucostaex"></option>
-  <option value="Glucosupix"></option>
-  <option value="Glucotheast"></option>
-  <option value="Glucotheix"></option>
-  <option value="Glucovitast"></option>
-  <option value="Glyciphage"></option>
-  <option value="Glycomet"></option>
-  <option value="Grilinctus"></option>
-  <option value="Hairgain"></option>
-  <option value="Harvoni"></option>
-  <option value="Healanto"></option>
-  <option value="Healbioer"></option>
-  <option value="Healcarer"></option>
-  <option value="Healcefa"></option>
-  <option value="Healcefin"></option>
-  <option value="Healdera"></option>
-  <option value="Healderin"></option>
-  <option value="Healfasex"></option>
-  <option value="Healfasin"></option>
-  <option value="Healfasol"></option>
-  <option value="Healflogen"></option>
-  <option value="Healfloix"></option>
-  <option value="Healgason"></option>
-  <option value="Healgluast"></option>
-  <option value="Healgluix"></option>
-  <option value="Healheaon"></option>
-  <option value="Healinfer"></option>
-  <option value="Healixbioast"></option>
-  <option value="Healixbioon"></option>
-  <option value="Healixcara"></option>
-  <option value="Healixcarol"></option>
-  <option value="Healixcefer"></option>
-  <option value="Healixcefin"></option>
-  <option value="Healixcefon"></option>
-  <option value="Healixcidon"></option>
-  <option value="Healixfloix"></option>
-  <option value="Healixfloon"></option>
-  <option value="Healixgasol"></option>
-  <option value="Healixgason"></option>
-  <option value="Healixgli"></option>
-  <option value="Healixgluo"></option>
-  <option value="Healixlifer"></option>
-  <option value="Healixneoin"></option>
-  <option value="Healixneoix"></option>
-  <option value="Healixneuast"></option>
-  <option value="Healixneuix"></option>
-  <option value="Healixnov"></option>
-  <option value="Healixprier"></option>
-  <option value="Healixprio"></option>
-  <option value="Healixquier"></option>
-  <option value="Healixquigen"></option>
-  <option value="Healixquiin"></option>
-  <option value="Healixquiix"></option>
-  <option value="Healixrexast"></option>
-  <option value="Healixsafex"></option>
-  <option value="Healixsafon"></option>
-  <option value="Healixsolex"></option>
-  <option value="Healixstaer"></option>
-  <option value="Healixsupa"></option>
-  <option value="Healixsurgen"></option>
-  <option value="Healixsuron"></option>
-  <option value="Healixthein"></option>
-  <option value="Healixvira"></option>
-  <option value="Healixvirast"></option>
-  <option value="Healixviro"></option>
-  <option value="Healixzyngen"></option>
-  <option value="Healixzynin"></option>
-  <option value="Heallifol"></option>
-  <option value="Heallipix"></option>
-  <option value="Heallipol"></option>
-  <option value="Healmaxast"></option>
-  <option value="Healmaxix"></option>
-  <option value="Healmedast"></option>
-  <option value="Healmedin"></option>
-  <option value="Healmedo"></option>
-  <option value="Healmedol"></option>
-  <option value="Healmyoex"></option>
-  <option value="Healopha"></option>
-  <option value="Healoto"></option>
-  <option value="Healpeder"></option>
-  <option value="Healpedon"></option>
-  <option value="Healpri"></option>
-  <option value="Healprigen"></option>
-  <option value="Healrexgen"></option>
-  <option value="Healrexix"></option>
-  <option value="Healsupast"></option>
-  <option value="Healsupgen"></option>
-  <option value="Healsupin"></option>
-  <option value="Healsupol"></option>
-  <option value="Healsupon"></option>
-  <option value="Healtheol"></option>
-  <option value="Healtheon"></option>
-  <option value="Healvirix"></option>
-  <option value="Healvitix"></option>
-  <option value="Healzinol"></option>
-  <option value="Healzynon"></option>
-  <option value="Heparin"></option>
-  <option value="Hifenac"></option>
-  <option value="Histac"></option>
-  <option value="Horlicks"></option>
-  <option value="Hydrocortisone Cream"></option>
-  <option value="Hyzaar"></option>
-  <option value="Ibugesic"></option>
-  <option value="Imipenem"></option>
-  <option value="Imodium"></option>
-  <option value="Inderal"></option>
-  <option value="Infexbio"></option>
-  <option value="Infexcarex"></option>
-  <option value="Infexcefast"></option>
-  <option value="Infexcidgen"></option>
-  <option value="Infexcidol"></option>
-  <option value="Infexcila"></option>
-  <option value="Infexcilol"></option>
-  <option value="Infexclio"></option>
-  <option value="Infexcurex"></option>
-  <option value="Infexcuro"></option>
-  <option value="Infexcurol"></option>
-  <option value="Infexfasast"></option>
-  <option value="Infexgluex"></option>
-  <option value="Infexgluol"></option>
-  <option value="Infexheaast"></option>
-  <option value="Infexheaol"></option>
-  <option value="Infexmedin"></option>
-  <option value="Infexmeta"></option>
-  <option value="Infexmyc"></option>
-  <option value="Infexmyco"></option>
-  <option value="Infexmyoin"></option>
-  <option value="Infexnovix"></option>
-  <option value="Infexotoix"></option>
-  <option value="Infexpluix"></option>
-  <option value="Infexproast"></option>
-  <option value="Infexproon"></option>
-  <option value="Infexquier"></option>
-  <option value="Infexquiex"></option>
-  <option value="Infexresix"></option>
-  <option value="Infexreso"></option>
-  <option value="Infexsafix"></option>
-  <option value="Infexsolast"></option>
-  <option value="Infexstaol"></option>
-  <option value="Infexsupon"></option>
-  <option value="Infexsur"></option>
-  <option value="Infextheix"></option>
-  <option value="Infexvitast"></option>
-  <option value="Infexvitin"></option>
-  <option value="Infexzina"></option>
-  <option value="Infexzynex"></option>
-  <option value="Infexzynin"></option>
-  <option value="Infexzynol"></option>
-  <option value="Infexzynon"></option>
-  <option value="Isabgol"></option>
-  <option value="Isoconazole"></option>
-  <option value="Isosorbide"></option>
-  <option value="Isotretinoin"></option>
-  <option value="Istamet"></option>
-  <option value="Itopride"></option>
-  <option value="Itraconazole"></option>
-  <option value="Janumet"></option>
-  <option value="Januvia"></option>
-  <option value="Kaletra"></option>
-  <option value="Kefpod"></option>
-  <option value="Kenacort"></option>
-  <option value="Ketanov"></option>
-  <option value="Ketoconazole"></option>
-  <option value="Ketorol"></option>
-  <option value="Lactogen"></option>
-  <option value="Lactulose"></option>
-  <option value="Lamisil"></option>
-  <option value="Lamivudine"></option>
-  <option value="Lamosyn"></option>
-  <option value="Lansop"></option>
-  <option value="Ledipasvir"></option>
-  <option value="Levaquin"></option>
-  <option value="Levocet"></option>
-  <option value="Levocet D"></option>
-  <option value="Levoflox"></option>
-  <option value="Levofloxacin Eye"></option>
-  <option value="Levolin"></option>
-  <option value="Levosulpiride"></option>
-  <option value="Lifeantol"></option>
-  <option value="Lifecida"></option>
-  <option value="Lifecil"></option>
-  <option value="Lifeclier"></option>
-  <option value="Lifecliin"></option>
-  <option value="Lifeclion"></option>
-  <option value="Lifecuron"></option>
-  <option value="Lifederin"></option>
-  <option value="Lifefason"></option>
-  <option value="Lifeflogen"></option>
-  <option value="Lifeflool"></option>
-  <option value="Lifegasa"></option>
-  <option value="Lifegason"></option>
-  <option value="Lifegliast"></option>
-  <option value="Lifeheaast"></option>
-  <option value="Lifeheaix"></option>
-  <option value="Lifeinfon"></option>
-  <option value="Lifelip"></option>
-  <option value="Lifelipa"></option>
-  <option value="Lifelipast"></option>
-  <option value="Lifelipon"></option>
-  <option value="Lifemycer"></option>
-  <option value="Lifemycex"></option>
-  <option value="Lifemyoex"></option>
-  <option value="Lifemyogen"></option>
-  <option value="Lifeneuon"></option>
-  <option value="Lifenexer"></option>
-  <option value="Lifenovex"></option>
-  <option value="Lifeotogen"></option>
-  <option value="Lifeotool"></option>
-  <option value="Lifepedix"></option>
-  <option value="Lifepedol"></option>
-  <option value="Lifepha"></option>
-  <option value="Lifephao"></option>
-  <option value="Lifepluin"></option>
-  <option value="Lifepriin"></option>
-  <option value="Lifepriol"></option>
-  <option value="Lifeprion"></option>
-  <option value="Lifepro"></option>
-  <option value="Lifequi"></option>
-  <option value="Lifesafer"></option>
-  <option value="Lifesafex"></option>
-  <option value="Lifesola"></option>
-  <option value="Lifestain"></option>
-  <option value="Lifethea"></option>
-  <option value="Lifetheast"></option>
-  <option value="Lifetheex"></option>
-  <option value="Lifethegen"></option>
-  <option value="Lifetheix"></option>
-  <option value="Lifeultol"></option>
-  <option value="Lifevirex"></option>
-  <option value="Lifevirin"></option>
-  <option value="Lifevirol"></option>
-  <option value="Lifezyngen"></option>
-  <option value="Limcee"></option>
-  <option value="Linezolid"></option>
-  <option value="Lipicard"></option>
-  <option value="Lipicure"></option>
-  <option value="Lipoanta"></option>
-  <option value="Lipoantol"></option>
-  <option value="Lipocara"></option>
-  <option value="Lipocarol"></option>
-  <option value="Lipociler"></option>
-  <option value="Lipocliol"></option>
-  <option value="Lipocurgen"></option>
-  <option value="Lipocurol"></option>
-  <option value="Lipofloa"></option>
-  <option value="Lipogliin"></option>
-  <option value="Lipoheagen"></option>
-  <option value="Lipoheaix"></option>
-  <option value="Lipoheao"></option>
-  <option value="Lipoinf"></option>
-  <option value="Lipolipin"></option>
-  <option value="Lipolipol"></option>
-  <option value="Lipomedex"></option>
-  <option value="Lipomedol"></option>
-  <option value="Lipometex"></option>
-  <option value="Lipometol"></option>
-  <option value="Lipomycix"></option>
-  <option value="Lipomyoix"></option>
-  <option value="Liponeoer"></option>
-  <option value="Liponeuin"></option>
-  <option value="Liponeuo"></option>
-  <option value="Liponexon"></option>
-  <option value="Liponorm"></option>
-  <option value="Liponovast"></option>
-  <option value="Lipootoex"></option>
-  <option value="Lipopedgen"></option>
-  <option value="Lipophaa"></option>
-  <option value="Lipophaer"></option>
-  <option value="Lipopriex"></option>
-  <option value="Lipoquiast"></option>
-  <option value="Liporesol"></option>
-  <option value="Lipostao"></option>
-  <option value="Liposupex"></option>
-  <option value="Lipoult"></option>
-  <option value="Lipoultgen"></option>
-  <option value="Lipovira"></option>
-  <option value="Lipozinin"></option>
-  <option value="Lipozino"></option>
-  <option value="Lipozynon"></option>
-  <option value="Lisinopril"></option>
-  <option value="Livogen"></option>
-  <option value="Lonazep"></option>
-  <option value="Loperamide"></option>
-  <option value="Lopinavir"></option>
-  <option value="Lopressor"></option>
-  <option value="Lornoxicam"></option>
-  <option value="Losar"></option>
-  <option value="Lotrimin"></option>
-  <option value="Lovenox"></option>
-  <option value="Lupitor"></option>
-  <option value="Macrobid"></option>
-  <option value="Macrodantin"></option>
-  <option value="Macrogol"></option>
-  <option value="Macrox"></option>
-  <option value="Maxallgen"></option>
-  <option value="Maxanta"></option>
-  <option value="Maxantex"></option>
-  <option value="Maxantin"></option>
-  <option value="Maxbiool"></option>
-  <option value="Maxcara"></option>
-  <option value="Maxcarast"></option>
-  <option value="Maxcarol"></option>
-  <option value="Maxcidol"></option>
-  <option value="Maxcurer"></option>
-  <option value="Maxderix"></option>
-  <option value="Maxgasa"></option>
-  <option value="Maxlifex"></option>
-  <option value="Maxmaxin"></option>
-  <option value="Maxmedon"></option>
-  <option value="Maxmetast"></option>
-  <option value="Maxmetgen"></option>
-  <option value="Maxophol"></option>
-  <option value="Maxotoex"></option>
-  <option value="Maxotoo"></option>
-  <option value="Maxpedast"></option>
-  <option value="Maxphao"></option>
-  <option value="Maxpluer"></option>
-  <option value="Maxproa"></option>
-  <option value="Maxresol"></option>
-  <option value="Maxsola"></option>
-  <option value="Maxstain"></option>
-  <option value="Maxtider"></option>
-  <option value="Maxviro"></option>
-  <option value="Maxvita"></option>
-  <option value="Maxzinast"></option>
-  <option value="Mediall"></option>
-  <option value="Mediallast"></option>
-  <option value="Mediallix"></option>
-  <option value="Mediallon"></option>
-  <option value="Mediantol"></option>
-  <option value="Medibioex"></option>
-  <option value="Medicarer"></option>
-  <option value="Medicarex"></option>
-  <option value="Medicarin"></option>
-  <option value="Medicefol"></option>
-  <option value="Medicidol"></option>
-  <option value="Medicligen"></option>
-  <option value="Medicurin"></option>
-  <option value="Medicurol"></option>
-  <option value="Medifaser"></option>
-  <option value="Medifasix"></option>
-  <option value="Medigluol"></option>
-  <option value="Mediheao"></option>
-  <option value="Medilipon"></option>
-  <option value="Medimed"></option>
-  <option value="Medimetgen"></option>
-  <option value="Medimycol"></option>
-  <option value="Medimyoin"></option>
-  <option value="Medinexon"></option>
-  <option value="Medinovo"></option>
-  <option value="Medioto"></option>
-  <option value="Mediotoa"></option>
-  <option value="Medipluix"></option>
-  <option value="Mediproix"></option>
-  <option value="Mediqalla"></option>
-  <option value="Mediqantast"></option>
-  <option value="Mediqantex"></option>
-  <option value="Mediqantgen"></option>
-  <option value="Mediqbioa"></option>
-  <option value="Mediqbiool"></option>
-  <option value="Mediqcarast"></option>
-  <option value="Mediqcarix"></option>
-  <option value="Mediqcilin"></option>
-  <option value="Mediqcli"></option>
-  <option value="Mediqcligen"></option>
-  <option value="Mediqcuro"></option>
-  <option value="Mediqfloin"></option>
-  <option value="Mediqgasin"></option>
-  <option value="Mediqgasix"></option>
-  <option value="Mediqheaast"></option>
-  <option value="Mediqheagen"></option>
-  <option value="Mediqmaxol"></option>
-  <option value="Mediqmed"></option>
-  <option value="Mediqmedast"></option>
-  <option value="Mediqmedin"></option>
-  <option value="Mediqmedix"></option>
-  <option value="Mediqmedol"></option>
-  <option value="Mediqmetgen"></option>
-  <option value="Mediqmycer"></option>
-  <option value="Mediqmyoix"></option>
-  <option value="Mediqneoo"></option>
-  <option value="Mediqneuo"></option>
-  <option value="Mediqneuol"></option>
-  <option value="Mediqnex"></option>
-  <option value="Mediqnexex"></option>
-  <option value="Mediqnover"></option>
-  <option value="Mediqopher"></option>
-  <option value="Mediqophex"></option>
-  <option value="Mediqophix"></option>
-  <option value="Mediqrexo"></option>
-  <option value="Mediqsaf"></option>
-  <option value="Mediqsafo"></option>
-  <option value="Mediqsolast"></option>
-  <option value="Mediqsolol"></option>
-  <option value="Mediqsura"></option>
-  <option value="Mediqsurgen"></option>
-  <option value="Mediqthea"></option>
-  <option value="Mediqtheon"></option>
-  <option value="Mediqvir"></option>
-  <option value="Mediqzingen"></option>
-  <option value="Mediresast"></option>
-  <option value="Mediresex"></option>
-  <option value="Medirexon"></option>
-  <option value="Medisafer"></option>
-  <option value="Medisolix"></option>
-  <option value="Medistaon"></option>
-  <option value="Meditheo"></option>
-  <option value="Meditider"></option>
-  <option value="Meditidon"></option>
-  <option value="Mediulto"></option>
-  <option value="Mediultol"></option>
-  <option value="Medivirin"></option>
-  <option value="Mediviron"></option>
-  <option value="Medivit"></option>
-  <option value="Mediwelast"></option>
-  <option value="Medizinex"></option>
-  <option value="Medizyngen"></option>
-  <option value="Medsantol"></option>
-  <option value="Medscara"></option>
-  <option value="Medscarast"></option>
-  <option value="Medscarex"></option>
-  <option value="Medscarol"></option>
-  <option value="Medscaron"></option>
-  <option value="Medscura"></option>
-  <option value="Medsfloex"></option>
-  <option value="Medshea"></option>
-  <option value="Medsheain"></option>
-  <option value="Medsheaix"></option>
-  <option value="Medsheaol"></option>
-  <option value="Medslipgen"></option>
-  <option value="Medsmaxo"></option>
-  <option value="Medsmeder"></option>
-  <option value="Medsmedex"></option>
-  <option value="Medsmedgen"></option>
-  <option value="Medsmedix"></option>
-  <option value="Medsmedol"></option>
-  <option value="Medsmetgen"></option>
-  <option value="Medsmoxgen"></option>
-  <option value="Medsmoxon"></option>
-  <option value="Medsmycin"></option>
-  <option value="Medsnexa"></option>
-  <option value="Medsphao"></option>
-  <option value="Medspriin"></option>
-  <option value="Medsproix"></option>
-  <option value="Medsquia"></option>
-  <option value="Medsquigen"></option>
-  <option value="Medsreson"></option>
-  <option value="Medsrex"></option>
-  <option value="Medssafol"></option>
-  <option value="Medssupin"></option>
-  <option value="Medsthe"></option>
-  <option value="Medsthea"></option>
-  <option value="Medstheast"></option>
-  <option value="Medstido"></option>
-  <option value="Medsvirer"></option>
-  <option value="Medsvirgen"></option>
-  <option value="Medsvirin"></option>
-  <option value="Medsvitix"></option>
-  <option value="Medswela"></option>
-  <option value="Meftal"></option>
-  <option value="Melacare"></option>
-  <option value="Meropenem"></option>
-  <option value="Metacin"></option>
-  <option value="Metalla"></option>
-  <option value="Metallgen"></option>
-  <option value="Metantex"></option>
-  <option value="Metanton"></option>
-  <option value="Metcara"></option>
-  <option value="Metcid"></option>
-  <option value="Metclion"></option>
-  <option value="Metcur"></option>
-  <option value="Metcurast"></option>
-  <option value="Metcurol"></option>
-  <option value="Metfloer"></option>
-  <option value="Metflool"></option>
-  <option value="Metgasast"></option>
-  <option value="Metgasgen"></option>
-  <option value="Metgasin"></option>
-  <option value="Metgason"></option>
-  <option value="Metglua"></option>
-  <option value="Methea"></option>
-  <option value="Metheaol"></option>
-  <option value="Metheaon"></option>
-  <option value="Metinfex"></option>
-  <option value="Metlipex"></option>
-  <option value="Metmed"></option>
-  <option value="Metmedex"></option>
-  <option value="Metmetol"></option>
-  <option value="Metmyco"></option>
-  <option value="Metmyoa"></option>
-  <option value="Metmyogen"></option>
-  <option value="Metneugen"></option>
-  <option value="Metnexo"></option>
-  <option value="Metnexol"></option>
-  <option value="Metnovol"></option>
-  <option value="Metoclopramide"></option>
-  <option value="Metolar"></option>
-  <option value="Metophix"></option>
-  <option value="Metotoer"></option>
-  <option value="Metphaol"></option>
-  <option value="Metprion"></option>
-  <option value="Metpure"></option>
-  <option value="Metresix"></option>
-  <option value="Metrexo"></option>
-  <option value="Metrogyl"></option>
-  <option value="Metsolin"></option>
-  <option value="Metsolol"></option>
-  <option value="Metstain"></option>
-  <option value="Metstaix"></option>
-  <option value="Metstaol"></option>
-  <option value="Metsupast"></option>
-  <option value="Metsur"></option>
-  <option value="Metsuron"></option>
-  <option value="Metthea"></option>
-  <option value="Mettido"></option>
-  <option value="Metultix"></option>
-  <option value="Metvir"></option>
-  <option value="Metviro"></option>
-  <option value="Metvirol"></option>
-  <option value="Metwela"></option>
-  <option value="Metzin"></option>
-  <option value="Metzinol"></option>
-  <option value="Metzok"></option>
-  <option value="Metzynol"></option>
-  <option value="Metzynon"></option>
-  <option value="Micafungin"></option>
-  <option value="Micardis"></option>
-  <option value="Micardis Plus"></option>
-  <option value="Miconazole"></option>
-  <option value="Minocycline"></option>
-  <option value="Minoxidil"></option>
-  <option value="Mintop"></option>
-  <option value="Molnupiravir"></option>
-  <option value="Mometasone"></option>
-  <option value="Monotrate"></option>
-  <option value="Montair"></option>
-  <option value="Montek"></option>
-  <option value="Mosapride"></option>
-  <option value="Movex"></option>
-  <option value="Movicol"></option>
-  <option value="Moxbioa"></option>
-  <option value="Moxbioix"></option>
-  <option value="Moxbioo"></option>
-  <option value="Moxcargen"></option>
-  <option value="Moxcidix"></option>
-  <option value="Moxcilol"></option>
-  <option value="Moxcliix"></option>
-  <option value="Moxcur"></option>
-  <option value="Moxcurgen"></option>
-  <option value="Moxfason"></option>
-  <option value="Moxgason"></option>
-  <option value="Moxglua"></option>
-  <option value="Moxgluex"></option>
-  <option value="Moxicip"></option>
-  <option value="Moxicip Eye"></option>
-  <option value="Moxifloxacin Eye"></option>
-  <option value="Moxikind"></option>
-  <option value="Moxlifast"></option>
-  <option value="Moxlipa"></option>
-  <option value="Moxmaxol"></option>
-  <option value="Moxmed"></option>
-  <option value="Moxmetast"></option>
-  <option value="Moxmetol"></option>
-  <option value="Moxmoxa"></option>
-  <option value="Moxmoxol"></option>
-  <option value="Moxmyool"></option>
-  <option value="Moxneogen"></option>
-  <option value="Moxnovon"></option>
-  <option value="Moxophol"></option>
-  <option value="Moxphaex"></option>
-  <option value="Moxpluon"></option>
-  <option value="Moxquion"></option>
-  <option value="Moxrexgen"></option>
-  <option value="Moxstaer"></option>
-  <option value="Moxstagen"></option>
-  <option value="Moxsurix"></option>
-  <option value="Moxtheol"></option>
-  <option value="Moxwelex"></option>
-  <option value="Moxwelo"></option>
-  <option value="Mupimet"></option>
-  <option value="Mycoanta"></option>
-  <option value="Mycoanter"></option>
-  <option value="Mycobioer"></option>
-  <option value="Mycobioix"></option>
-  <option value="Mycocargen"></option>
-  <option value="Mycocaron"></option>
-  <option value="Mycocefo"></option>
-  <option value="Mycocilo"></option>
-  <option value="Mycocurast"></option>
-  <option value="Mycoflool"></option>
-  <option value="Mycogasa"></option>
-  <option value="Mycogaso"></option>
-  <option value="Mycogluol"></option>
-  <option value="Mycoinfer"></option>
-  <option value="Mycomaxa"></option>
-  <option value="Mycomeder"></option>
-  <option value="Mycomedgen"></option>
-  <option value="Mycomedix"></option>
-  <option value="Mycomedol"></option>
-  <option value="Mycometol"></option>
-  <option value="Mycomyc"></option>
-  <option value="Mycomycer"></option>
-  <option value="Mycomyoin"></option>
-  <option value="Myconeoon"></option>
-  <option value="Myconeuin"></option>
-  <option value="Myconovin"></option>
-  <option value="Mycootoon"></option>
-  <option value="Mycopeder"></option>
-  <option value="Mycopria"></option>
-  <option value="Mycoproex"></option>
-  <option value="Mycoquia"></option>
-  <option value="Mycoquiex"></option>
-  <option value="Mycoresin"></option>
-  <option value="Mycorexin"></option>
-  <option value="Mycorexix"></option>
-  <option value="Mycosafix"></option>
-  <option value="Mycotheo"></option>
-  <option value="Mycovirast"></option>
-  <option value="Mycovirix"></option>
-  <option value="Mycowel"></option>
-  <option value="Mycozinast"></option>
-  <option value="Mycozinin"></option>
-  <option value="Mycozyna"></option>
-  <option value="Myoantgen"></option>
-  <option value="Myoantix"></option>
-  <option value="Myoantol"></option>
-  <option value="Myobioon"></option>
-  <option value="Myocara"></option>
-  <option value="Myocidol"></option>
-  <option value="Myocliol"></option>
-  <option value="Myocurgen"></option>
-  <option value="Myofas"></option>
-  <option value="Myogluix"></option>
-  <option value="Myoheaix"></option>
-  <option value="Myoheaon"></option>
-  <option value="Myomaxol"></option>
-  <option value="Myomedin"></option>
-  <option value="Myometex"></option>
-  <option value="Myomoxo"></option>
-  <option value="Myomyoex"></option>
-  <option value="Myoneuin"></option>
-  <option value="Myonexgen"></option>
-  <option value="Myonexol"></option>
-  <option value="Myonovol"></option>
-  <option value="Myophaer"></option>
-  <option value="Myopluol"></option>
-  <option value="Myopluon"></option>
-  <option value="Myoproin"></option>
-  <option value="Myoquier"></option>
-  <option value="Myoresol"></option>
-  <option value="Myorexgen"></option>
-  <option value="Myorexin"></option>
-  <option value="Myosafo"></option>
-  <option value="Myospaz"></option>
-  <option value="Myothea"></option>
-  <option value="Myotida"></option>
-  <option value="Myovir"></option>
-  <option value="Myozinon"></option>
-  <option value="Nan Pro"></option>
-  <option value="Naprosyn"></option>
-  <option value="Natamycin"></option>
-  <option value="Nebicard"></option>
-  <option value="Nebistar"></option>
-  <option value="Neksium"></option>
-  <option value="Neoantol"></option>
-  <option value="Neobioex"></option>
-  <option value="Neobiool"></option>
-  <option value="Neocilo"></option>
-  <option value="Neocurer"></option>
-  <option value="Neoderer"></option>
-  <option value="Neoderix"></option>
-  <option value="Neofloex"></option>
-  <option value="Neofloon"></option>
-  <option value="Neogasex"></option>
-  <option value="Neogliol"></option>
-  <option value="Neogluix"></option>
-  <option value="Neolif"></option>
-  <option value="Neolifo"></option>
-  <option value="Neomeder"></option>
-  <option value="Neomedgen"></option>
-  <option value="Neometo"></option>
-  <option value="Neomoxer"></option>
-  <option value="Neomycix"></option>
-  <option value="Neoneoa"></option>
-  <option value="Neoneuon"></option>
-  <option value="Neonex"></option>
-  <option value="Neonexex"></option>
-  <option value="Neonov"></option>
-  <option value="Neoophgen"></option>
-  <option value="Neoophin"></option>
-  <option value="Neoophol"></option>
-  <option value="Neootoast"></option>
-  <option value="Neopeda"></option>
-  <option value="Neopedol"></option>
-  <option value="Neopria"></option>
-  <option value="Neoquion"></option>
-  <option value="Neoresex"></option>
-  <option value="Neorex"></option>
-  <option value="Neosafol"></option>
-  <option value="Neosporin"></option>
-  <option value="Neosupix"></option>
-  <option value="Neosupo"></option>
-  <option value="Neosurin"></option>
-  <option value="Neotheix"></option>
-  <option value="Neotheol"></option>
-  <option value="Neoultast"></option>
-  <option value="Neoulton"></option>
-  <option value="Neovirer"></option>
-  <option value="Neowela"></option>
-  <option value="Neowelex"></option>
-  <option value="Neozinix"></option>
-  <option value="Neozyn"></option>
-  <option value="Neozynix"></option>
-  <option value="Neozyno"></option>
-  <option value="Neuroallast"></option>
-  <option value="Neuroallol"></option>
-  <option value="Neurobion"></option>
-  <option value="Neurocar"></option>
-  <option value="Neurocarin"></option>
-  <option value="Neurocido"></option>
-  <option value="Neurocila"></option>
-  <option value="Neurocilex"></option>
-  <option value="Neurocliix"></option>
-  <option value="Neurocurol"></option>
-  <option value="Neurofasast"></option>
-  <option value="Neuroheaer"></option>
-  <option value="Neuroheaol"></option>
-  <option value="Neuroheaon"></option>
-  <option value="Neuroinfgen"></option>
-  <option value="Neurolifast"></option>
-  <option value="Neurolifo"></option>
-  <option value="Neurolipex"></option>
-  <option value="Neuromaxo"></option>
-  <option value="Neuromedin"></option>
-  <option value="Neuromedix"></option>
-  <option value="Neuromedo"></option>
-  <option value="Neuromedol"></option>
-  <option value="Neurometgen"></option>
-  <option value="Neuromycgen"></option>
-  <option value="Neuroneoo"></option>
-  <option value="Neuroneuo"></option>
-  <option value="Neuronexol"></option>
-  <option value="Neurootoin"></option>
-  <option value="Neuropluon"></option>
-  <option value="Neuroprio"></option>
-  <option value="Neurorexon"></option>
-  <option value="Neurosafon"></option>
-  <option value="Neurosolgen"></option>
-  <option value="Neurosolol"></option>
-  <option value="Neurothe"></option>
-  <option value="Neurovirer"></option>
-  <option value="Neurovirgen"></option>
-  <option value="Neurovita"></option>
-  <option value="Neurovitin"></option>
-  <option value="Neurozinin"></option>
-  <option value="Nevirapine"></option>
-  <option value="Nexallix"></option>
-  <option value="Nexcarast"></option>
-  <option value="Nexcarol"></option>
-  <option value="Nexcefgen"></option>
-  <option value="Nexcefix"></option>
-  <option value="Nexcider"></option>
-  <option value="Nexcli"></option>
-  <option value="Nexcliast"></option>
-  <option value="Nexcliex"></option>
-  <option value="Nexclion"></option>
-  <option value="Nexcurer"></option>
-  <option value="Nexcurex"></option>
-  <option value="Nexcurin"></option>
-  <option value="Nexfasin"></option>
-  <option value="Nexfasix"></option>
-  <option value="Nexgliol"></option>
-  <option value="Nexglugen"></option>
-  <option value="Nexheaon"></option>
-  <option value="Nexinfa"></option>
-  <option value="Nexito"></option>
-  <option value="Nexium"></option>
-  <option value="Nexlifast"></option>
-  <option value="Nexlip"></option>
-  <option value="Nexmeter"></option>
-  <option value="Nexmetin"></option>
-  <option value="Nexmox"></option>
-  <option value="Nexneo"></option>
-  <option value="Nexnexer"></option>
-  <option value="Nexnovol"></option>
-  <option value="Nexophix"></option>
-  <option value="Nexotoast"></option>
-  <option value="Nexplu"></option>
-  <option value="Nexpluo"></option>
-  <option value="Nexpria"></option>
-  <option value="Nexprigen"></option>
-  <option value="Nexpriin"></option>
-  <option value="Nexpro"></option>
-  <option value="Nexproa"></option>
-  <option value="Nexprool"></option>
-  <option value="Nexreso"></option>
-  <option value="Nexresol"></option>
-  <option value="Nexsafix"></option>
-  <option value="Nexsupa"></option>
-  <option value="Nexsurast"></option>
-  <option value="Nexsurer"></option>
-  <option value="Nexsurin"></option>
-  <option value="Nexsuron"></option>
-  <option value="Nexthea"></option>
-  <option value="Nextheast"></option>
-  <option value="Nextheer"></option>
-  <option value="Nextheex"></option>
-  <option value="Nexthegen"></option>
-  <option value="Nextheon"></option>
-  <option value="Nextid"></option>
-  <option value="Nextider"></option>
-  <option value="Nextidex"></option>
-  <option value="Nexultin"></option>
-  <option value="Nexzinast"></option>
-  <option value="Nexzyna"></option>
-  <option value="Nicoumalone"></option>
-  <option value="Nimulid"></option>
-  <option value="Nise"></option>
-  <option value="Nitrofurantoin"></option>
-  <option value="Nitrostat"></option>
-  <option value="Nizoral"></option>
-  <option value="Nizoral Shampoo"></option>
-  <option value="Norilet"></option>
-  <option value="Novaallo"></option>
-  <option value="Novaantex"></option>
-  <option value="Novacarex"></option>
-  <option value="Novacaron"></option>
-  <option value="Novacid"></option>
-  <option value="Novacidast"></option>
-  <option value="Novacilast"></option>
-  <option value="Novaclox"></option>
-  <option value="Novacura"></option>
-  <option value="Novacurast"></option>
-  <option value="Novacurol"></option>
-  <option value="Novadero"></option>
-  <option value="Novafasast"></option>
-  <option value="Novafasol"></option>
-  <option value="Novaflogen"></option>
-  <option value="Novagasast"></option>
-  <option value="Novaheaer"></option>
-  <option value="Novaheaol"></option>
-  <option value="Novainfer"></option>
-  <option value="Novamed"></option>
-  <option value="Novamedgen"></option>
-  <option value="Novametix"></option>
-  <option value="Novamoxer"></option>
-  <option value="Novamoxin"></option>
-  <option value="Novamoxix"></option>
-  <option value="Novamycast"></option>
-  <option value="Novamycer"></option>
-  <option value="Novaneuol"></option>
-  <option value="Novapriast"></option>
-  <option value="Novaproast"></option>
-  <option value="Novaquia"></option>
-  <option value="Novathein"></option>
-  <option value="Novatheo"></option>
-  <option value="Novaultin"></option>
-  <option value="Novaultol"></option>
-  <option value="Novavira"></option>
-  <option value="Novaviro"></option>
-  <option value="Novavito"></option>
-  <option value="Novavitol"></option>
-  <option value="Novawelo"></option>
-  <option value="Nucoxia"></option>
-  <option value="ORS Dabur"></option>
-  <option value="ORS Electral"></option>
-  <option value="ORS Enerzal"></option>
-  <option value="ORS Glucose D"></option>
-  <option value="ORS Hydralyte"></option>
-  <option value="Obimet"></option>
-  <option value="Ocid"></option>
-  <option value="Oflox"></option>
-  <option value="Ofloxacin Eye"></option>
-  <option value="Okacet"></option>
-  <option value="Okacet L"></option>
-  <option value="Olanzia"></option>
-  <option value="Olmesar"></option>
-  <option value="Omez"></option>
-  <option value="Omez D"></option>
-  <option value="Ondem"></option>
-  <option value="Onglyza"></option>
-  <option value="Ophthallgen"></option>
-  <option value="Ophthanton"></option>
-  <option value="Ophthbiogen"></option>
-  <option value="Ophthcarin"></option>
-  <option value="Ophthcarix"></option>
-  <option value="Ophthcefex"></option>
-  <option value="Ophthcliex"></option>
-  <option value="Ophthcliol"></option>
-  <option value="Ophthcurer"></option>
-  <option value="Ophthderol"></option>
-  <option value="Ophthfasol"></option>
-  <option value="Ophthgasol"></option>
-  <option value="Ophthinfast"></option>
-  <option value="Ophthlifex"></option>
-  <option value="Ophthlipgen"></option>
-  <option value="Ophthlipix"></option>
-  <option value="Ophthmaxin"></option>
-  <option value="Ophthmedix"></option>
-  <option value="Ophthmedol"></option>
-  <option value="Ophthmeto"></option>
-  <option value="Ophthmyco"></option>
-  <option value="Ophthneoex"></option>
-  <option value="Ophthneuer"></option>
-  <option value="Ophthneuix"></option>
-  <option value="Ophthpedo"></option>
-  <option value="Ophthpluin"></option>
-  <option value="Ophthpriol"></option>
-  <option value="Ophthproex"></option>
-  <option value="Ophthresast"></option>
-  <option value="Ophthrexer"></option>
-  <option value="Ophthsafa"></option>
-  <option value="Ophthsupol"></option>
-  <option value="Ophththeex"></option>
-  <option value="Ophthulta"></option>
-  <option value="Ophthultix"></option>
-  <option value="Ophthvirer"></option>
-  <option value="Ophthviro"></option>
-  <option value="Ophthvirol"></option>
-  <option value="Ophthzynon"></option>
-  <option value="Orofer"></option>
-  <option value="Oseltamivir"></option>
-  <option value="Osteocalcium"></option>
-  <option value="Otoanton"></option>
-  <option value="Otobiool"></option>
-  <option value="Otocarix"></option>
-  <option value="Otocidix"></option>
-  <option value="Otocliix"></option>
-  <option value="Otodera"></option>
-  <option value="Otoderast"></option>
-  <option value="Otogasex"></option>
-  <option value="Otogliin"></option>
-  <option value="Otohea"></option>
-  <option value="Otolip"></option>
-  <option value="Otolipa"></option>
-  <option value="Otomax"></option>
-  <option value="Otomaxon"></option>
-  <option value="Otomedol"></option>
-  <option value="Otomoxol"></option>
-  <option value="Otomycgen"></option>
-  <option value="Otoneoo"></option>
-  <option value="Otoophol"></option>
-  <option value="Otootoast"></option>
-  <option value="Otopedol"></option>
-  <option value="Otopedon"></option>
-  <option value="Otophaast"></option>
-  <option value="Otopluex"></option>
-  <option value="Otopriast"></option>
-  <option value="Otoproex"></option>
-  <option value="Otoprool"></option>
-  <option value="Otoproon"></option>
-  <option value="Otoquier"></option>
-  <option value="Otoquiol"></option>
-  <option value="Otorexin"></option>
-  <option value="Otosurast"></option>
-  <option value="Otosurix"></option>
-  <option value="Ototidgen"></option>
-  <option value="Otovirex"></option>
-  <option value="Otovirol"></option>
-  <option value="Otozynin"></option>
-  <option value="Otozynol"></option>
-  <option value="Oxetol"></option>
-  <option value="Pacimol"></option>
-  <option value="Pacimol Active"></option>
-  <option value="Palonosetron"></option>
-  <option value="Pan"></option>
-  <option value="Pansec"></option>
-  <option value="Pantadoc"></option>
-  <option value="Pantocid"></option>
-  <option value="Pantodac"></option>
-  <option value="Pantop"></option>
-  <option value="Pantosec"></option>
-  <option value="Paracip"></option>
-  <option value="Pediaallol"></option>
-  <option value="Pediaantol"></option>
-  <option value="Pediabioex"></option>
-  <option value="Pediacliol"></option>
-  <option value="Pediaderol"></option>
-  <option value="Pediafasast"></option>
-  <option value="Pediafloast"></option>
-  <option value="Pediagluon"></option>
-  <option value="Pediahea"></option>
-  <option value="Pedialipol"></option>
-  <option value="Pediamaxgen"></option>
-  <option value="Pediamed"></option>
-  <option value="Pediameda"></option>
-  <option value="Pediameder"></option>
-  <option value="Pediamedol"></option>
-  <option value="Pediameto"></option>
-  <option value="Pediamoxo"></option>
-  <option value="Pediamoxol"></option>
-  <option value="Pediamycer"></option>
-  <option value="Pedianeuin"></option>
-  <option value="Pedianeuo"></option>
-  <option value="Pedianexast"></option>
-  <option value="Pedianovast"></option>
-  <option value="Pedianovix"></option>
-  <option value="Pediaotoix"></option>
-  <option value="Pediapluast"></option>
-  <option value="Pediaprool"></option>
-  <option value="Pediaresgen"></option>
-  <option value="Pediasolol"></option>
-  <option value="Pediastaex"></option>
-  <option value="Pediasupex"></option>
-  <option value="Pediasure"></option>
-  <option value="Pediasure Advance"></option>
-  <option value="Pediasurix"></option>
-  <option value="Pediathe"></option>
-  <option value="Pediatheol"></option>
-  <option value="Pediavirin"></option>
-  <option value="Pediavirol"></option>
-  <option value="Pediavitol"></option>
-  <option value="Pediaviton"></option>
-  <option value="Pediawelgen"></option>
-  <option value="Pediazino"></option>
-  <option value="Pediazinon"></option>
-  <option value="Pediazynon"></option>
-  <option value="Pepcid"></option>
-  <option value="Perindopril"></option>
-  <option value="Perinorm"></option>
-  <option value="Pexep"></option>
-  <option value="Pharmallon"></option>
-  <option value="Pharmant"></option>
-  <option value="Pharmcar"></option>
-  <option value="Pharmcarix"></option>
-  <option value="Pharmcider"></option>
-  <option value="Pharmcliol"></option>
-  <option value="Pharmcurast"></option>
-  <option value="Pharmcurol"></option>
-  <option value="Pharmdergen"></option>
-  <option value="Pharmfasol"></option>
-  <option value="Pharmfason"></option>
-  <option value="Pharmflool"></option>
-  <option value="Pharmglia"></option>
-  <option value="Pharmgliol"></option>
-  <option value="Pharmgluol"></option>
-  <option value="Pharmheagen"></option>
-  <option value="Pharmlipast"></option>
-  <option value="Pharmmaxa"></option>
-  <option value="Pharmmaxast"></option>
-  <option value="Pharmmaxex"></option>
-  <option value="Pharmmetast"></option>
-  <option value="Pharmmetgen"></option>
-  <option value="Pharmmycast"></option>
-  <option value="Pharmotoa"></option>
-  <option value="Pharmotoo"></option>
-  <option value="Pharmpro"></option>
-  <option value="Pharmresin"></option>
-  <option value="Pharmrexa"></option>
-  <option value="Pharmsafin"></option>
-  <option value="Pharmsafol"></option>
-  <option value="Pharmsolo"></option>
-  <option value="Pharmstaa"></option>
-  <option value="Pharmstaol"></option>
-  <option value="Pharmthe"></option>
-  <option value="Pharmtheer"></option>
-  <option value="Pharmtidex"></option>
-  <option value="Pharmtidon"></option>
-  <option value="Pharmvir"></option>
-  <option value="Pharmvirol"></option>
-  <option value="Pharmvitex"></option>
-  <option value="Phexin"></option>
-  <option value="Pimecrolimus Cream"></option>
-  <option value="Plavix"></option>
-  <option value="Plusallix"></option>
-  <option value="Plusantol"></option>
-  <option value="Plusanton"></option>
-  <option value="Pluscidin"></option>
-  <option value="Pluscil"></option>
-  <option value="Plusclier"></option>
-  <option value="Pluscliix"></option>
-  <option value="Plusclion"></option>
-  <option value="Pluscurast"></option>
-  <option value="Plusfas"></option>
-  <option value="Plusfasol"></option>
-  <option value="Plusfloo"></option>
-  <option value="Plusheaa"></option>
-  <option value="Plusheaon"></option>
-  <option value="Plusinfix"></option>
-  <option value="Pluslifon"></option>
-  <option value="Plusmeda"></option>
-  <option value="Plusmedol"></option>
-  <option value="Plusmeton"></option>
-  <option value="Plusmoxol"></option>
-  <option value="Plusmyc"></option>
-  <option value="Plusophex"></option>
-  <option value="Plusotoa"></option>
-  <option value="Plusotoo"></option>
-  <option value="Pluspeder"></option>
-  <option value="Plusphaa"></option>
-  <option value="Plusresex"></option>
-  <option value="Plussolast"></option>
-  <option value="Plussolgen"></option>
-  <option value="Plussolon"></option>
-  <option value="Plusstaex"></option>
-  <option value="Plusstaol"></option>
-  <option value="Plussurin"></option>
-  <option value="Plussurol"></option>
-  <option value="Plustheex"></option>
-  <option value="Plusthegen"></option>
-  <option value="Plustidgen"></option>
-  <option value="Pluswelol"></option>
-  <option value="Pluszynin"></option>
-  <option value="Polymyxin"></option>
-  <option value="Posaconazole"></option>
-  <option value="Pradaxa"></option>
-  <option value="Prevacid"></option>
-  <option value="Primeallex"></option>
-  <option value="Primeallin"></option>
-  <option value="Primeantgen"></option>
-  <option value="Primecarast"></option>
-  <option value="Primecarer"></option>
-  <option value="Primecaro"></option>
-  <option value="Primecefast"></option>
-  <option value="Primecidast"></option>
-  <option value="Primecidol"></option>
-  <option value="Primecurex"></option>
-  <option value="Primeflool"></option>
-  <option value="Primegasol"></option>
-  <option value="Primegliol"></option>
-  <option value="Primegluast"></option>
-  <option value="Primegluin"></option>
-  <option value="Primeheaer"></option>
-  <option value="Primelifa"></option>
-  <option value="Primelifo"></option>
-  <option value="Primelipast"></option>
-  <option value="Primemaxex"></option>
-  <option value="Primemeda"></option>
-  <option value="Primemedol"></option>
-  <option value="Primemyoast"></option>
-  <option value="Primemyogen"></option>
-  <option value="Primeneoer"></option>
-  <option value="Primeneool"></option>
-  <option value="Primeneoon"></option>
-  <option value="Primeopher"></option>
-  <option value="Primeotoix"></option>
-  <option value="Primeped"></option>
-  <option value="Primepriin"></option>
-  <option value="Primeproex"></option>
-  <option value="Primequigen"></option>
-  <option value="Primeres"></option>
-  <option value="Primereso"></option>
-  <option value="Primerexix"></option>
-  <option value="Primesafon"></option>
-  <option value="Primesola"></option>
-  <option value="Primestain"></option>
-  <option value="Primesupex"></option>
-  <option value="Primesupon"></option>
-  <option value="Primetheol"></option>
-  <option value="Primetida"></option>
-  <option value="Primeulton"></option>
-  <option value="Primevitix"></option>
-  <option value="Primezynix"></option>
-  <option value="Primezynol"></option>
-  <option value="Probioex"></option>
-  <option value="Procarast"></option>
-  <option value="Procefer"></option>
-  <option value="Prociler"></option>
-  <option value="Procurol"></option>
-  <option value="Profloin"></option>
-  <option value="Progasin"></option>
-  <option value="Progli"></option>
-  <option value="Progluer"></option>
-  <option value="Proheao"></option>
-  <option value="Prolif"></option>
-  <option value="Prolifol"></option>
-  <option value="Prolomet"></option>
-  <option value="Promedol"></option>
-  <option value="Promoxex"></option>
-  <option value="Promoxol"></option>
-  <option value="Promyca"></option>
-  <option value="Proneoa"></option>
-  <option value="Proneuer"></option>
-  <option value="Pronexa"></option>
-  <option value="Prootool"></option>
-  <option value="Propecia"></option>
-  <option value="Propedol"></option>
-  <option value="Propluex"></option>
-  <option value="Proprier"></option>
-  <option value="Proprio"></option>
-  <option value="Proreson"></option>
-  <option value="Prorexast"></option>
-  <option value="Prorexin"></option>
-  <option value="Prosafgen"></option>
-  <option value="Prosup"></option>
-  <option value="Prosupex"></option>
-  <option value="Protera"></option>
-  <option value="Protidgen"></option>
-  <option value="Protopic"></option>
-  <option value="Provira"></option>
-  <option value="Provirast"></option>
-  <option value="Provirol"></option>
-  <option value="Proxyvon"></option>
-  <option value="Prozinast"></option>
-  <option value="Prozinol"></option>
-  <option value="Psyllium Husk"></option>
-  <option value="Quickallex"></option>
-  <option value="Quickantast"></option>
-  <option value="Quickbioix"></option>
-  <option value="Quickcar"></option>
-  <option value="Quickcarix"></option>
-  <option value="Quickcarol"></option>
-  <option value="Quickcaron"></option>
-  <option value="Quickcefgen"></option>
-  <option value="Quickcidin"></option>
-  <option value="Quickcilin"></option>
-  <option value="Quickclier"></option>
-  <option value="Quickcurast"></option>
-  <option value="Quickdera"></option>
-  <option value="Quickderast"></option>
-  <option value="Quickdero"></option>
-  <option value="Quickfasgen"></option>
-  <option value="Quickfaso"></option>
-  <option value="Quickgasast"></option>
-  <option value="Quickgasgen"></option>
-  <option value="Quickglion"></option>
-  <option value="Quickgluix"></option>
-  <option value="Quickgluol"></option>
-  <option value="Quickinfo"></option>
-  <option value="Quicklifol"></option>
-  <option value="Quicklipast"></option>
-  <option value="Quicklipon"></option>
-  <option value="Quickmaxa"></option>
-  <option value="Quickmaxol"></option>
-  <option value="Quickmedex"></option>
-  <option value="Quickmedgen"></option>
-  <option value="Quickmedol"></option>
-  <option value="Quickmoxol"></option>
-  <option value="Quickmyoin"></option>
-  <option value="Quicknovin"></option>
-  <option value="Quickotoast"></option>
-  <option value="Quickotoer"></option>
-  <option value="Quickotoex"></option>
-  <option value="Quickpedol"></option>
-  <option value="Quickpedon"></option>
-  <option value="Quickphaa"></option>
-  <option value="Quickphaon"></option>
-  <option value="Quickreser"></option>
-  <option value="Quicktheex"></option>
-  <option value="Quicktheix"></option>
-  <option value="Quicktheon"></option>
-  <option value="Quickulton"></option>
-  <option value="Quickvitol"></option>
-  <option value="Quickwelon"></option>
-  <option value="Quickzyna"></option>
-  <option value="Rabemac"></option>
-  <option value="Rabicip"></option>
-  <option value="Rabium"></option>
-  <option value="Raltegravir"></option>
-  <option value="Ramipril"></option>
-  <option value="Rantac"></option>
-  <option value="Razo"></option>
-  <option value="Refresh Tears"></option>
-  <option value="Remdesivir"></option>
-  <option value="Repace"></option>
-  <option value="Respantgen"></option>
-  <option value="Respanton"></option>
-  <option value="Respbioo"></option>
-  <option value="Respcarast"></option>
-  <option value="Respcarin"></option>
-  <option value="Respcaro"></option>
-  <option value="Respcida"></option>
-  <option value="Respcidix"></option>
-  <option value="Respcilin"></option>
-  <option value="Respclier"></option>
-  <option value="Respcur"></option>
-  <option value="Respcurex"></option>
-  <option value="Respcurgen"></option>
-  <option value="Respfasol"></option>
-  <option value="Respheagen"></option>
-  <option value="Resplif"></option>
-  <option value="Respmeta"></option>
-  <option value="Respmetix"></option>
-  <option value="Respmycin"></option>
-  <option value="Respmycol"></option>
-  <option value="Respmyoix"></option>
-  <option value="Respneoa"></option>
-  <option value="Respneoast"></option>
-  <option value="Respneoon"></option>
-  <option value="Respophix"></option>
-  <option value="Respotoix"></option>
-  <option value="Resppluo"></option>
-  <option value="Respproa"></option>
-  <option value="Respquiix"></option>
-  <option value="Respquiol"></option>
-  <option value="Resprexgen"></option>
-  <option value="Respsol"></option>
-  <option value="Respsolin"></option>
-  <option value="Respstaix"></option>
-  <option value="Respsura"></option>
-  <option value="Respsurol"></option>
-  <option value="Resptheex"></option>
-  <option value="Respthegen"></option>
-  <option value="Respthein"></option>
-  <option value="Resptheo"></option>
-  <option value="Resptheol"></option>
-  <option value="Respulter"></option>
-  <option value="Respultgen"></option>
-  <option value="Respvitin"></option>
-  <option value="Respzin"></option>
-  <option value="Respzinin"></option>
-  <option value="Respzynol"></option>
-  <option value="Restyl"></option>
-  <option value="Retino-A"></option>
-  <option value="Rexantin"></option>
-  <option value="Rexantol"></option>
-  <option value="Rexcara"></option>
-  <option value="Rexcarast"></option>
-  <option value="Rexcarix"></option>
-  <option value="Rexcaro"></option>
-  <option value="Rexcida"></option>
-  <option value="Rexcliex"></option>
-  <option value="Rexcliol"></option>
-  <option value="Rexcurast"></option>
-  <option value="Rexfasast"></option>
-  <option value="Rexfasex"></option>
-  <option value="Rexfaso"></option>
-  <option value="Rexfloix"></option>
-  <option value="Rexgasol"></option>
-  <option value="Rexgluer"></option>
-  <option value="Rexgluon"></option>
-  <option value="Rexheaol"></option>
-  <option value="Rexheaon"></option>
-  <option value="Rexlifin"></option>
-  <option value="Rexmaxix"></option>
-  <option value="Rexmaxo"></option>
-  <option value="Rexmed"></option>
-  <option value="Rexmedin"></option>
-  <option value="Rexmedo"></option>
-  <option value="Rexmedol"></option>
-  <option value="Rexmycer"></option>
-  <option value="Rexneuix"></option>
-  <option value="Rexnover"></option>
-  <option value="Rexophol"></option>
-  <option value="Rexplua"></option>
-  <option value="Rexpluer"></option>
-  <option value="Rexpria"></option>
-  <option value="Rexprigen"></option>
-  <option value="Rexrexol"></option>
-  <option value="Rexsolast"></option>
-  <option value="Rexstaast"></option>
-  <option value="Rexsupon"></option>
-  <option value="Rexthegen"></option>
-  <option value="Rexthein"></option>
-  <option value="Rextheol"></option>
-  <option value="Rextido"></option>
-  <option value="Rexwelix"></option>
-  <option value="Ribavirin"></option>
-  <option value="Rifaximin"></option>
-  <option value="Ritonavir"></option>
-  <option value="Rivaroxaban"></option>
-  <option value="Rogaine"></option>
-  <option value="Rosu"></option>
-  <option value="Rosuless"></option>
-  <option value="Rosuvas"></option>
-  <option value="Roxid"></option>
-  <option value="Rozat"></option>
-  <option value="Rozavel"></option>
-  <option value="Rozavel F"></option>
-  <option value="Rozucor"></option>
-  <option value="Safeallix"></option>
-  <option value="Safeantex"></option>
-  <option value="Safebioer"></option>
-  <option value="Safecida"></option>
-  <option value="Safecila"></option>
-  <option value="Safecura"></option>
-  <option value="Safecurin"></option>
-  <option value="Safecuro"></option>
-  <option value="Safefloo"></option>
-  <option value="Safegason"></option>
-  <option value="Safegliex"></option>
-  <option value="Safeglio"></option>
-  <option value="Safegluon"></option>
-  <option value="Safelip"></option>
-  <option value="Safemeda"></option>
-  <option value="Safemetin"></option>
-  <option value="Safemycol"></option>
-  <option value="Safemyoast"></option>
-  <option value="Safeneuon"></option>
-  <option value="Safenovix"></option>
-  <option value="Safepha"></option>
-  <option value="Safephao"></option>
-  <option value="Safephaon"></option>
-  <option value="Safepria"></option>
-  <option value="Safeproin"></option>
-  <option value="Safequio"></option>
-  <option value="Safereso"></option>
-  <option value="Safesafa"></option>
-  <option value="Safesafo"></option>
-  <option value="Safesafol"></option>
-  <option value="Safevirol"></option>
-  <option value="Safezynon"></option>
-  <option value="Savlon"></option>
-  <option value="Sebamed"></option>
-  <option value="Seloken"></option>
-  <option value="Senokot"></option>
-  <option value="Seretide"></option>
-  <option value="Serlift"></option>
-  <option value="Shelcal"></option>
-  <option value="Sinarest"></option>
-  <option value="Sizodon"></option>
-  <option value="Skinlite"></option>
-  <option value="Sofosbuvir"></option>
-  <option value="Soframycin"></option>
-  <option value="Soluallix"></option>
-  <option value="Soluantol"></option>
-  <option value="Solubioa"></option>
-  <option value="Solubiool"></option>
-  <option value="Solubioon"></option>
-  <option value="Solucarer"></option>
-  <option value="Solucaron"></option>
-  <option value="Solucef"></option>
-  <option value="Solucefast"></option>
-  <option value="Solucurgen"></option>
-  <option value="Soluderol"></option>
-  <option value="Solufloa"></option>
-  <option value="Solugluon"></option>
-  <option value="Solumaxer"></option>
-  <option value="Solumaxex"></option>
-  <option value="Solumoxex"></option>
-  <option value="Solunexa"></option>
-  <option value="Soluophex"></option>
-  <option value="Solupluast"></option>
-  <option value="Solupluin"></option>
-  <option value="Soluquiex"></option>
-  <option value="Soluquiol"></option>
-  <option value="Solusafol"></option>
-  <option value="Solusup"></option>
-  <option value="Solusupix"></option>
-  <option value="Solusurol"></option>
-  <option value="Soluthe"></option>
-  <option value="Solutheast"></option>
-  <option value="Soluvirol"></option>
-  <option value="Soluzinol"></option>
-  <option value="Somac"></option>
-  <option value="Spiroton"></option>
-  <option value="Stalopam"></option>
-  <option value="Stamlo"></option>
-  <option value="Starpress"></option>
-  <option value="Statanto"></option>
-  <option value="Statbio"></option>
-  <option value="Statcar"></option>
-  <option value="Statcarast"></option>
-  <option value="Statcargen"></option>
-  <option value="Statcefast"></option>
-  <option value="Statcefer"></option>
-  <option value="Statcidast"></option>
-  <option value="Statcidon"></option>
-  <option value="Statcurer"></option>
-  <option value="Statderin"></option>
-  <option value="Statfas"></option>
-  <option value="Statfloo"></option>
-  <option value="Statgasa"></option>
-  <option value="Statgasast"></option>
-  <option value="Statgli"></option>
-  <option value="Statgluex"></option>
-  <option value="Statgluix"></option>
-  <option value="Statheaa"></option>
-  <option value="Statheaast"></option>
-  <option value="Statinf"></option>
-  <option value="Statlifgen"></option>
-  <option value="Statmaxast"></option>
-  <option value="Statmeder"></option>
-  <option value="Statmedix"></option>
-  <option value="Statmedon"></option>
-  <option value="Statmyogen"></option>
-  <option value="Statmyool"></option>
-  <option value="Statneo"></option>
-  <option value="Statneuon"></option>
-  <option value="Statnexa"></option>
-  <option value="Statophol"></option>
-  <option value="Statped"></option>
-  <option value="Statpedol"></option>
-  <option value="Statrexast"></option>
-  <option value="Statsola"></option>
-  <option value="Statsolgen"></option>
-  <option value="Statsolix"></option>
-  <option value="Statstain"></option>
-  <option value="Statsupol"></option>
-  <option value="Statsurin"></option>
-  <option value="Statthea"></option>
-  <option value="Stattheer"></option>
-  <option value="Stattheex"></option>
-  <option value="Stattheol"></option>
-  <option value="Stattheon"></option>
-  <option value="Stattid"></option>
-  <option value="Stattidgen"></option>
-  <option value="Statzinol"></option>
-  <option value="Statzyner"></option>
-  <option value="Stavudine"></option>
-  <option value="Storvas"></option>
-  <option value="Storvas EZ"></option>
-  <option value="Stribild"></option>
-  <option value="Sumo"></option>
-  <option value="Supacef"></option>
-  <option value="Superant"></option>
-  <option value="Superantin"></option>
-  <option value="Superbioa"></option>
-  <option value="Superbioast"></option>
-  <option value="Superbioo"></option>
-  <option value="Superbiool"></option>
-  <option value="Supercara"></option>
-  <option value="Supercarer"></option>
-  <option value="Supercarex"></option>
-  <option value="Supercefix"></option>
-  <option value="Supercilgen"></option>
-  <option value="Supercliol"></option>
-  <option value="Supergasol"></option>
-  <option value="Superheao"></option>
-  <option value="Superlifa"></option>
-  <option value="Superlifer"></option>
-  <option value="Supermedo"></option>
-  <option value="Supermoxix"></option>
-  <option value="Supermycgen"></option>
-  <option value="Supermycol"></option>
-  <option value="Superotoa"></option>
-  <option value="Superotoix"></option>
-  <option value="Superotoo"></option>
-  <option value="Superprigen"></option>
-  <option value="Superprion"></option>
-  <option value="Superproer"></option>
-  <option value="Superquiix"></option>
-  <option value="Superresix"></option>
-  <option value="Superrexin"></option>
-  <option value="Supersolgen"></option>
-  <option value="Superstaa"></option>
-  <option value="Superstaer"></option>
-  <option value="Supertheol"></option>
-  <option value="Supervirol"></option>
-  <option value="Supervitix"></option>
-  <option value="Supervitol"></option>
-  <option value="Supradyn"></option>
-  <option value="Suprax"></option>
-  <option value="Sureantin"></option>
-  <option value="Sureantix"></option>
-  <option value="Surebiool"></option>
-  <option value="Surecarol"></option>
-  <option value="Surecefex"></option>
-  <option value="Surecefin"></option>
-  <option value="Surecurin"></option>
-  <option value="Surederin"></option>
-  <option value="Surefloa"></option>
-  <option value="Suregluex"></option>
-  <option value="Surehea"></option>
-  <option value="Sureheagen"></option>
-  <option value="Sureheaon"></option>
-  <option value="Surelipast"></option>
-  <option value="Suremeder"></option>
-  <option value="Suremedix"></option>
-  <option value="Suremetex"></option>
-  <option value="Suremoxin"></option>
-  <option value="Suremoxol"></option>
-  <option value="Suremycol"></option>
-  <option value="Surenovast"></option>
-  <option value="Surenovol"></option>
-  <option value="Sureopher"></option>
-  <option value="Sureotoix"></option>
-  <option value="Sureotool"></option>
-  <option value="Surepedex"></option>
-  <option value="Surephaer"></option>
-  <option value="Sureprier"></option>
-  <option value="Sureproer"></option>
-  <option value="Sureprool"></option>
-  <option value="Suresolon"></option>
-  <option value="Surestaol"></option>
-  <option value="Surethea"></option>
-  <option value="Suretider"></option>
-  <option value="Suretidol"></option>
-  <option value="Sureultol"></option>
-  <option value="Sureulton"></option>
-  <option value="Sureviro"></option>
-  <option value="Sureviron"></option>
-  <option value="Surezynix"></option>
-  <option value="Surfaz"></option>
-  <option value="Systane"></option>
-  <option value="Tacrolimus Ointment"></option>
-  <option value="Tarivid"></option>
-  <option value="Tavanic"></option>
-  <option value="Taxim"></option>
-  <option value="Tazloc"></option>
-  <option value="Tears Naturale"></option>
-  <option value="Tears Plus"></option>
-  <option value="Teicoplanin"></option>
-  <option value="Teldor"></option>
-  <option value="Telekast"></option>
-  <option value="Telfast"></option>
-  <option value="Telma"></option>
-  <option value="Telmisat"></option>
-  <option value="Teneligliptin"></option>
-  <option value="Tenofovir"></option>
-  <option value="Terbinafine"></option>
-  <option value="Terbinaforce"></option>
-  <option value="Tetracycline"></option>
-  <option value="Theracarol"></option>
-  <option value="Theracefex"></option>
-  <option value="Theracidol"></option>
-  <option value="Theracilon"></option>
-  <option value="Theracliast"></option>
-  <option value="Theracliix"></option>
-  <option value="Theracur"></option>
-  <option value="Theracurix"></option>
-  <option value="Theraderast"></option>
-  <option value="Therafasin"></option>
-  <option value="Theragasgen"></option>
-  <option value="Theraheaer"></option>
-  <option value="Theraheaex"></option>
-  <option value="Theraheain"></option>
-  <option value="Theraheaol"></option>
-  <option value="Therainfa"></option>
-  <option value="Therainfer"></option>
-  <option value="Therainfol"></option>
-  <option value="Theralifol"></option>
-  <option value="Theralip"></option>
-  <option value="Theramedast"></option>
-  <option value="Theramedgen"></option>
-  <option value="Theramedol"></option>
-  <option value="Theramoxo"></option>
-  <option value="Theramycix"></option>
-  <option value="Theraneoin"></option>
-  <option value="Theraneuin"></option>
-  <option value="Theranexon"></option>
-  <option value="Theraphaix"></option>
-  <option value="Theraphaol"></option>
-  <option value="Theraprion"></option>
-  <option value="Theraproix"></option>
-  <option value="Theraquier"></option>
-  <option value="Theraquio"></option>
-  <option value="Therarexa"></option>
-  <option value="Therasafer"></option>
-  <option value="Therastaon"></option>
-  <option value="Therasurex"></option>
-  <option value="Theratheast"></option>
-  <option value="Theravita"></option>
-  <option value="Theravitol"></option>
-  <option value="Theraviton"></option>
-  <option value="Therawelol"></option>
-  <option value="Therexant"></option>
-  <option value="Therexbiogen"></option>
-  <option value="Therexcefo"></option>
-  <option value="Therexcilol"></option>
-  <option value="Therexcurex"></option>
-  <option value="Therexgasex"></option>
-  <option value="Therexgaso"></option>
-  <option value="Therexheaex"></option>
-  <option value="Therexheagen"></option>
-  <option value="Therexinfex"></option>
-  <option value="Therexlifol"></option>
-  <option value="Therexlipo"></option>
-  <option value="Therexmeda"></option>
-  <option value="Therexmedgen"></option>
-  <option value="Therexmetex"></option>
-  <option value="Therexneoer"></option>
-  <option value="Therexneuol"></option>
-  <option value="Therexopho"></option>
-  <option value="Therexpedix"></option>
-  <option value="Therexpedo"></option>
-  <option value="Therexphaon"></option>
-  <option value="Therexpluer"></option>
-  <option value="Therexpluol"></option>
-  <option value="Therexrexer"></option>
-  <option value="Therexsafin"></option>
-  <option value="Therexsafix"></option>
-  <option value="Therexsafol"></option>
-  <option value="Therexsurer"></option>
-  <option value="Therexthea"></option>
-  <option value="Therextheex"></option>
-  <option value="Therextheix"></option>
-  <option value="Therexvira"></option>
-  <option value="Therexvirer"></option>
-  <option value="Therexvirgen"></option>
-  <option value="Therexvitast"></option>
-  <option value="Therexzinix"></option>
-  <option value="Therexzyngen"></option>
-  <option value="Thyronorm"></option>
-  <option value="Tideallex"></option>
-  <option value="Tideallin"></option>
-  <option value="Tideallix"></option>
-  <option value="Tideallol"></option>
-  <option value="Tidebioa"></option>
-  <option value="Tidecara"></option>
-  <option value="Tidecarer"></option>
-  <option value="Tidecarol"></option>
-  <option value="Tidecidol"></option>
-  <option value="Tidecli"></option>
-  <option value="Tideclio"></option>
-  <option value="Tidecurast"></option>
-  <option value="Tidecurol"></option>
-  <option value="Tidefasol"></option>
-  <option value="Tideheaex"></option>
-  <option value="Tideheaon"></option>
-  <option value="Tideinfix"></option>
-  <option value="Tidelifast"></option>
-  <option value="Tidelipix"></option>
-  <option value="Tidemaxer"></option>
-  <option value="Tidemedex"></option>
-  <option value="Tidemedon"></option>
-  <option value="Tidemetol"></option>
-  <option value="Tidemyco"></option>
-  <option value="Tidemycol"></option>
-  <option value="Tideneuol"></option>
-  <option value="Tidenexol"></option>
-  <option value="Tideoph"></option>
-  <option value="Tideotoer"></option>
-  <option value="Tidephain"></option>
-  <option value="Tidepriol"></option>
-  <option value="Tidequier"></option>
-  <option value="Tiderexex"></option>
-  <option value="Tidesolol"></option>
-  <option value="Tidesolon"></option>
-  <option value="Tidestain"></option>
-  <option value="Tidestaol"></option>
-  <option value="Tidesuper"></option>
-  <option value="Tidetheex"></option>
-  <option value="Tidetheo"></option>
-  <option value="Tidetida"></option>
-  <option value="Tideulter"></option>
-  <option value="Tideultgen"></option>
-  <option value="Tidevirex"></option>
-  <option value="Tidevirgen"></option>
-  <option value="Tidevirix"></option>
-  <option value="Tideviton"></option>
-  <option value="Tidezina"></option>
-  <option value="Tidezinix"></option>
-  <option value="Tigecycline"></option>
-  <option value="Tixylix"></option>
-  <option value="Toba Eye"></option>
-  <option value="Tobramycin Eye Drops"></option>
-  <option value="Tonact"></option>
-  <option value="Tonact TG"></option>
-  <option value="Toradol"></option>
-  <option value="Trajenta"></option>
-  <option value="Tramadol"></option>
-  <option value="Tramafix"></option>
-  <option value="Tretinoin"></option>
-  <option value="Triamcinolone"></option>
-  <option value="Trinicalm"></option>
-  <option value="Triphala"></option>
-  <option value="Truvada"></option>
-  <option value="Ulpan"></option>
-  <option value="Ultraall"></option>
-  <option value="Ultraantol"></option>
-  <option value="Ultrabioast"></option>
-  <option value="Ultracarex"></option>
-  <option value="Ultracarol"></option>
-  <option value="Ultracefa"></option>
-  <option value="Ultracet"></option>
-  <option value="Ultracidgen"></option>
-  <option value="Ultraclia"></option>
-  <option value="Ultrader"></option>
-  <option value="Ultrafasex"></option>
-  <option value="Ultragliin"></option>
-  <option value="Ultraheaol"></option>
-  <option value="Ultraheaon"></option>
-  <option value="Ultrainfex"></option>
-  <option value="Ultrainfol"></option>
-  <option value="Ultralifast"></option>
-  <option value="Ultralifon"></option>
-  <option value="Ultralipol"></option>
-  <option value="Ultram"></option>
-  <option value="Ultramedex"></option>
-  <option value="Ultramedo"></option>
-  <option value="Ultrameto"></option>
-  <option value="Ultramoxol"></option>
-  <option value="Ultramycast"></option>
-  <option value="Ultramycer"></option>
-  <option value="Ultraneool"></option>
-  <option value="Ultraneuer"></option>
-  <option value="Ultraneugen"></option>
-  <option value="Ultraophex"></option>
-  <option value="Ultraotogen"></option>
-  <option value="Ultraotoo"></option>
-  <option value="Ultrapeder"></option>
-  <option value="Ultrapedol"></option>
-  <option value="Ultraphaex"></option>
-  <option value="Ultraplugen"></option>
-  <option value="Ultrapriol"></option>
-  <option value="Ultraproex"></option>
-  <option value="Ultrareser"></option>
-  <option value="Ultrarexer"></option>
-  <option value="Ultrasafon"></option>
-  <option value="Ultrasupgen"></option>
-  <option value="Ultratheix"></option>
-  <option value="Ultratheon"></option>
-  <option value="Ultraulter"></option>
-  <option value="Ultravir"></option>
-  <option value="Ultravirol"></option>
-  <option value="Ultravita"></option>
-  <option value="Ultrawelon"></option>
-  <option value="Ultrazinin"></option>
-  <option value="Valacyclovir"></option>
-  <option value="Valparin"></option>
-  <option value="Valtrex"></option>
-  <option value="Vancomycin"></option>
-  <option value="Velpatasvir"></option>
-  <option value="Verapamil"></option>
-  <option value="Vildagliptin"></option>
-  <option value="Viroant"></option>
-  <option value="Viroantex"></option>
-  <option value="Viroantix"></option>
-  <option value="Virocarer"></option>
-  <option value="Virocarin"></option>
-  <option value="Virocarol"></option>
-  <option value="Virocidon"></option>
-  <option value="Virocilon"></option>
-  <option value="Virodergen"></option>
-  <option value="Virofloast"></option>
-  <option value="Viroglier"></option>
-  <option value="Virohea"></option>
-  <option value="Viroheagen"></option>
-  <option value="Viroheaol"></option>
-  <option value="Viroinfo"></option>
-  <option value="Virolipast"></option>
-  <option value="Viromed"></option>
-  <option value="Viromedast"></option>
-  <option value="Viromedol"></option>
-  <option value="Viromoxol"></option>
-  <option value="Vironantin"></option>
-  <option value="Vironcar"></option>
-  <option value="Vironcidol"></option>
-  <option value="Vironciler"></option>
-  <option value="Vironcilol"></option>
-  <option value="Vironcurast"></option>
-  <option value="Vironcurgen"></option>
-  <option value="Vironeua"></option>
-  <option value="Vironeuix"></option>
-  <option value="Vironfasex"></option>
-  <option value="Vironfloon"></option>
-  <option value="Virongas"></option>
-  <option value="Virongaser"></option>
-  <option value="Virongaso"></option>
-  <option value="Vironglion"></option>
-  <option value="Vironheaol"></option>
-  <option value="Vironheaon"></option>
-  <option value="Vironinfa"></option>
-  <option value="Vironlifa"></option>
-  <option value="Vironlifin"></option>
-  <option value="Vironlipo"></option>
-  <option value="Vironmeda"></option>
-  <option value="Vironmedast"></option>
-  <option value="Vironmedix"></option>
-  <option value="Vironmedon"></option>
-  <option value="Vironmeto"></option>
-  <option value="Vironmoxast"></option>
-  <option value="Vironmycast"></option>
-  <option value="Vironneoa"></option>
-  <option value="Vironnexol"></option>
-  <option value="Vironovol"></option>
-  <option value="Vironpriin"></option>
-  <option value="Vironproast"></option>
-  <option value="Vironrex"></option>
-  <option value="Vironrexix"></option>
-  <option value="Vironsolon"></option>
-  <option value="Vironstaast"></option>
-  <option value="Vironstagen"></option>
-  <option value="Vironsuper"></option>
-  <option value="Vironsupon"></option>
-  <option value="Virontheer"></option>
-  <option value="Vironultex"></option>
-  <option value="Vironvirgen"></option>
-  <option value="Vironvirin"></option>
-  <option value="Vironvirix"></option>
-  <option value="Vironwelix"></option>
-  <option value="Vironzynol"></option>
-  <option value="Vironzynon"></option>
-  <option value="Viroophgen"></option>
-  <option value="Viropeder"></option>
-  <option value="Viropedin"></option>
-  <option value="Virophagen"></option>
-  <option value="Viropria"></option>
-  <option value="Viropriast"></option>
-  <option value="Viroprigen"></option>
-  <option value="Viropriin"></option>
-  <option value="Virorex"></option>
-  <option value="Virorexol"></option>
-  <option value="Virosolast"></option>
-  <option value="Virosurin"></option>
-  <option value="Virothea"></option>
-  <option value="Virotida"></option>
-  <option value="Virotidex"></option>
-  <option value="Viroultgen"></option>
-  <option value="Virovirol"></option>
-  <option value="Viroviron"></option>
-  <option value="Virozin"></option>
-  <option value="Virozinol"></option>
-  <option value="Virozyna"></option>
-  <option value="Virozyngen"></option>
-  <option value="Vitaallol"></option>
-  <option value="Vitaant"></option>
-  <option value="Vitacarix"></option>
-  <option value="Vitacido"></option>
-  <option value="Vitacidon"></option>
-  <option value="Vitacilin"></option>
-  <option value="Vitaderex"></option>
-  <option value="Vitafasgen"></option>
-  <option value="Vitafasol"></option>
-  <option value="Vitaflo"></option>
-  <option value="Vitagluex"></option>
-  <option value="Vitainfast"></option>
-  <option value="Vitalifex"></option>
-  <option value="Vitalifix"></option>
-  <option value="Vitalipon"></option>
-  <option value="Vitameda"></option>
-  <option value="Vitamedo"></option>
-  <option value="Vitamycer"></option>
-  <option value="Vitaneool"></option>
-  <option value="Vitaneua"></option>
-  <option value="Vitanexa"></option>
-  <option value="Vitanexol"></option>
-  <option value="Vitaphaix"></option>
-  <option value="Vitaprigen"></option>
-  <option value="Vitareso"></option>
-  <option value="Vitarexo"></option>
-  <option value="Vitasolast"></option>
-  <option value="Vitasolix"></option>
-  <option value="Vitastao"></option>
-  <option value="Vitasuper"></option>
-  <option value="Vitavir"></option>
-  <option value="Vitavirix"></option>
-  <option value="Vitavito"></option>
-  <option value="Vitawelon"></option>
-  <option value="Vitazynex"></option>
-  <option value="Voglibose"></option>
-  <option value="Volix"></option>
-  <option value="Voriconazole"></option>
-  <option value="Voveran"></option>
-  <option value="Wellcar"></option>
-  <option value="Wellcargen"></option>
-  <option value="Wellcarol"></option>
-  <option value="Wellcefol"></option>
-  <option value="Wellcidex"></option>
-  <option value="Wellcilo"></option>
-  <option value="Wellclier"></option>
-  <option value="Wellcliol"></option>
-  <option value="Wellcura"></option>
-  <option value="Wellcurin"></option>
-  <option value="Wellcurol"></option>
-  <option value="Wellfasast"></option>
-  <option value="Wellfasix"></option>
-  <option value="Wellflogen"></option>
-  <option value="Wellgliix"></option>
-  <option value="Wellheaon"></option>
-  <option value="Wellinfin"></option>
-  <option value="Welllifast"></option>
-  <option value="Welllifon"></option>
-  <option value="Welllipin"></option>
-  <option value="Welllipol"></option>
-  <option value="Welllipon"></option>
-  <option value="Wellmoxer"></option>
-  <option value="Wellmoxin"></option>
-  <option value="Wellneoin"></option>
-  <option value="Wellneoo"></option>
-  <option value="Wellnex"></option>
-  <option value="Wellnov"></option>
-  <option value="Wellnovgen"></option>
-  <option value="Wellopha"></option>
-  <option value="Wellophol"></option>
-  <option value="Wellpluin"></option>
-  <option value="Wellresgen"></option>
-  <option value="Wellrex"></option>
-  <option value="Wellstaol"></option>
-  <option value="Wellsupex"></option>
-  <option value="Wellsupgen"></option>
-  <option value="Wellsupo"></option>
-  <option value="Wellsupol"></option>
-  <option value="Wellthegen"></option>
-  <option value="Welltheol"></option>
-  <option value="Welltheon"></option>
-  <option value="Wellult"></option>
-  <option value="Wellvirast"></option>
-  <option value="Wellvitex"></option>
-  <option value="Wellwel"></option>
-  <option value="Wellziner"></option>
-  <option value="Xarelto"></option>
-  <option value="Xifaxan"></option>
-  <option value="Xyzal"></option>
-  <option value="Zanamivir"></option>
-  <option value="Zedex"></option>
-  <option value="Zerodol"></option>
-  <option value="Zerodol P"></option>
-  <option value="Zidovudine"></option>
-  <option value="Zifi"></option>
-  <option value="Zimnic"></option>
-  <option value="Zinantast"></option>
-  <option value="Zinantix"></option>
-  <option value="Zinanto"></option>
-  <option value="Zinantol"></option>
-  <option value="Zinbioex"></option>
-  <option value="Zincarex"></option>
-  <option value="Zincargen"></option>
-  <option value="Zincaro"></option>
-  <option value="Zincefgen"></option>
-  <option value="Zincid"></option>
-  <option value="Zincliol"></option>
-  <option value="Zincovit"></option>
-  <option value="Zincuron"></option>
-  <option value="Zinderix"></option>
-  <option value="Zinfloa"></option>
-  <option value="Zingligen"></option>
-  <option value="Zinglio"></option>
-  <option value="Zingliol"></option>
-  <option value="Zinglu"></option>
-  <option value="Zinheaix"></option>
-  <option value="Zininfer"></option>
-  <option value="Zinmaxgen"></option>
-  <option value="Zinmeda"></option>
-  <option value="Zinmedast"></option>
-  <option value="Zinmedgen"></option>
-  <option value="Zinmoxex"></option>
-  <option value="Zinmyoast"></option>
-  <option value="Zinneuer"></option>
-  <option value="Zinneuol"></option>
-  <option value="Zinnexix"></option>
-  <option value="Zinnovol"></option>
-  <option value="Zinotoex"></option>
-  <option value="Zinotoix"></option>
-  <option value="Zinotoon"></option>
-  <option value="Zinpedol"></option>
-  <option value="Zinpluol"></option>
-  <option value="Zinpriex"></option>
-  <option value="Zinproo"></option>
-  <option value="Zinprool"></option>
-  <option value="Zinrexer"></option>
-  <option value="Zinstaast"></option>
-  <option value="Zinstagen"></option>
-  <option value="Zinstaix"></option>
-  <option value="Zinsupgen"></option>
-  <option value="Zintheex"></option>
-  <option value="Zinthein"></option>
-  <option value="Zinulta"></option>
-  <option value="Zinzynix"></option>
-  <option value="Zithrocin"></option>
-  <option value="Zithromax"></option>
-  <option value="Zofran"></option>
-  <option value="Zolfresh"></option>
-  <option value="Zoryl"></option>
-  <option value="Zovirax"></option>
-  <option value="Zynallin"></option>
-  <option value="Zynallol"></option>
-  <option value="Zynantol"></option>
-  <option value="Zynbioer"></option>
-  <option value="Zyncarer"></option>
-  <option value="Zyncarol"></option>
-  <option value="Zyncider"></option>
-  <option value="Zynclia"></option>
-  <option value="Zyncliix"></option>
-  <option value="Zyncur"></option>
-  <option value="Zynderex"></option>
-  <option value="Zynfasast"></option>
-  <option value="Zynfasol"></option>
-  <option value="Zynfloer"></option>
-  <option value="Zynfloo"></option>
-  <option value="Zynglio"></option>
-  <option value="Zynheaol"></option>
-  <option value="Zyninf"></option>
-  <option value="Zyninfgen"></option>
-  <option value="Zyninfol"></option>
-  <option value="Zynlifol"></option>
-  <option value="Zynmedon"></option>
-  <option value="Zynmeter"></option>
-  <option value="Zynmyc"></option>
-  <option value="Zynmyo"></option>
-  <option value="Zynneuin"></option>
-  <option value="Zynnex"></option>
-  <option value="Zynotoa"></option>
-  <option value="Zynphaix"></option>
-  <option value="Zynpluast"></option>
-  <option value="Zynrexin"></option>
-  <option value="Zynrexol"></option>
-  <option value="Zynsurol"></option>
-  <option value="Zyntheix"></option>
-  <option value="Zynultex"></option>
-  <option value="Zynulto"></option>
-  <option value="Zynwel"></option>
-  <option value="Zynwelol"></option>
-  <option value="Zynzyner"></option>
-  <option value="Zyrtec"></option>
-</datalist>
+<dialog id="notesDlg" aria-labelledby="notesTitle">
+  <h2 id="notesTitle">注意書きの管理</h2>
+  <p class="note">追加・編集・削除ができます。空の欄は保存時に取り除かれます。</p>
+  <div id="noteList"></div>
+  <div class="acts">
+    <button type="button" id="noteAdd">＋ 注意書きを追加</button>
+    <button type="button" id="noteReset">初期の注意書きに戻す</button>
+  </div>
+  <div class="acts" style="justify-content:flex-end">
+    <button type="button" id="noteCancel">キャンセル</button>
+    <button type="button" class="main" id="noteSave">保存</button>
+  </div>
+</dialog>
+
+<div id="sheet" aria-hidden="true"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<datalist id="drugs"></datalist>
 
 <script>
-  let medCounter = 0;
-  const frequencyOptions = {
-    "1日1回": ["朝のみ", "昼のみ", "夜のみ"],
-    "1日2回": ["朝と夜", "朝と昼", "昼と夜"],
-    "1日3回": ["朝昼夜"],
-    "1日4回": ["朝昼晩夜"]
-  };
+const KEY = "nomikata:v2";
+const DRUGS = "Accutane,Aciloc,Acitrom,Acyclovir,Adapalene,Aldactone,Allegra,Almox,Amaryl,Amlodac,Amlong,Apixaban,Arixtra,Ascoril,Asthalin,Atenolol,Atorfit,Atorlip,Augmentin,Avil,Avodart,Azee,Azithral,Bactrim,Bactroban,Becosules,Benadryl,Betadine,Betnovate,Biktarvy,Bisacodyl,Bisoprolol,Brufen,Budecort,Calamine,Calcimax,Calpol,Candid,Canesten,Cardace,Carvedilol,Cefixime,Cefuroxime,Ceftriaxone,Cetaphil,Cetzine,Cifran,Ciplox,Clavam,Clexane,Clindamycin,Clopitab,Combiflam,Concor,Corex,Crocin,Depakote,Dettol,Dexorange,Differin,Diflucan,Dolo-650,Domperidone,Doxycycline,Dulcolax,Duphalac,Ecosprin,Eliquis,Elocon,Eltroxin,Emeset,Ensure,Entecavir,Epilim,Erythrocin,Esomac,Evion,Famciclovir,Famotidine".split(",");
+const TYPES = ["抗生剤","抗ウィルス剤","解熱鎮痛剤","痛み止め","抗炎症剤","抗アレルギー剤","咳止め","カルシウム用","鼻詰まり用","風邪用","整腸剤","目薬","筋弛緩剤","高血圧症治療薬","塗り薬","保湿剤","ローション","シャンプー","糖尿病治療薬","ビタミン剤","点鼻薬","下痢止め","吐き気止め","消毒薬","その他"];
+const FORMS = ["錠剤","カプセル","粉薬","シロップ","点眼・点耳・点鼻","スプレー","その他"];
+const FREQ = {"1日1回":["朝のみ","昼のみ","夜のみ"],"1日2回":["朝と夜","朝と昼","昼と夜"],"1日3回":["朝昼夜"],"1日4回":["朝昼夕寝る前"]};
+const FOOD = ["食前後いつでも","食前","食後","食間"];
+const NOTES = [
+ "熱が37.5度以上ある場合だけお飲みください。続けて飲む場合は6時間ほどあけてください。",
+ "体の痛みがある場合だけお飲みください。続けて飲む場合は6時間ほどあけてください。",
+ "頭痛がある場合だけお飲みください。続けて飲む場合は6時間ほどあけてください。",
+ "熱が37.5度以上、または体の痛みや頭痛がある場合にお飲みください。続けて飲む場合は6時間ほどあけてください。",
+ "患部の痛みがある場合だけお飲みください。続けて飲む場合は6時間ほどあけてください。",
+ "患部にお使いください。","患部だけにお塗りください。","お水に混ぜて飲み始めてください。",
+ "1袋を1リットルのお水に混ぜて飲みください。",
+ "Suspension Syrup薬の作り方手順：数回たたいて粉末をほぐし、パケットのお水を加えて、ボトルを閉める。　ボトルを閉めて良く振り、均一にする。",
+ "粉末シロップの作り方：ボトルを数回たたいて粉をほぐし、沸騰させて冷ました水を線まで加えます。ふたを閉めてよく振り、均一にしてください。"
+];
+let notes = (() => { try { const a = JSON.parse(localStorage.getItem(KEY + ":notes")); if (Array.isArray(a)) return a; } catch (e) {} return [...NOTES]; })();
+const AREAS = ["両目","左目","右目","両耳","左耳","右耳","両鼻","左鼻","右鼻"];
 
-  function createMedicineRow(copyData = null) {
-    medCounter++;
-    const medDiv = document.createElement('div');
-    medDiv.className = 'medication';
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const opts = (list, ph) => (ph ? `<option value="">${ph}</option>` : "") + list.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join("");
+const meds = $("#meds");
 
-    medDiv.innerHTML = `
-      <div class="medication-number">${medCounter}.</div>
-      <div class="mb-2">
-        <input type="text" class="form-control med-name" placeholder="薬の名前" list="medicineList" autocomplete="off" onfocus="this.value='';">
-      </div>
-      <div class="mb-2 d-flex align-items-center gap-2">
-        <div style="flex: 1;">
-          <select class="form-control med-type">
-            <option value="">薬の種類</option>
-            <option>抗生剤</option><option>抗ウィルス剤</option><option>解熱鎮痛剤</option><option>痛み止め</option>
-            <option>抗炎症剤</option><option>抗アレルギー剤</option><option>咳止め</option><option>胃薬</option>
-            <option>カルシウム用</option><option>鼻詰まり用</option><option>風邪用</option><option>吸入器</option>
-            <option>整腸剤</option><option>目薬</option><option>筋弛緩剤</option><option>高血圧症治療薬</option>
-            <option>塗り薬</option><option>保湿剤</option><option>ローション</option><option>シャンプー</option><option>ネブライザー用</option>
-            <option>糖尿病治療薬</option><option>ビタミン剤</option><option>点鼻薬</option><option>その他</option>
-          </select>
-          <input type="text" class="form-control med-type-other mt-2" placeholder="薬の種類を入力してください" style="display:none;">
-        </div>
-        <div class="form-check">
-          <input class="form-check-input med-prn" type="checkbox">
-          <label class="form-check-label">頓服用</label>
-        </div>
-      </div>
+$("#drugs").innerHTML = DRUGS.map(d => `<option value="${d}">`).join("");
 
-      <div class="mb-2">
-        <select class="form-control med-form">
-          <option value="">薬の形状を選択</option>
-          <option value="tablet">錠剤</option>
-          <option value="tablet">カプセル</option>
-          <option value="syrup">シロップ</option>
-          <option value="drops">点眼/点耳</option>
-          <option value="spray">スプレー</option>
-          <option value="other">その他</option>
-        </select>
-      </div>
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toast.id); toast.id = setTimeout(() => t.classList.remove("on"), 2200);
+}
 
-      <div class="mb-2 d-flex flex-wrap gap-2 align-items-center dose-line">
-        <div id="dose-container" style="flex: 1 1 180px;"></div>
-        <select class="form-control med-frequency frequency-select" style="flex: 1 1 130px;">
-          <option value="">頻度</option>
-          <option>1日1回</option><option>1日2回</option><option>1日3回</option><option>1日4回</option>
-        </select>
-        <select class="form-control med-time time-detail-select" disabled style="flex: 1 1 130px;">
-          <option>服用タイミング</option>
-        </select>
-        <select class="form-control med-foodtiming" style="flex: 1 1 120px;">
-          <option value="">食前/後</option><option>食前後いつでも</option><option>食前</option><option>食後</option>
-        </select>
-        <input type="number" class="form-control med-duration-num" min="1" inputmode="numeric" placeholder="日数" style="flex: 1 1 60px;">
-        <select class="form-control med-duration-type" style="flex: 1 1 80px;">
-          <option value="">期間</option><option value="日間">日間</option><option value="週間">週間</option><option value="ヶ月間">ヶ月間</option>
-        </select>
-      </div>
+function doseHTML(form) {
+  const num = `<input type="number" min="0" step="0.5" inputmode="decimal" data-f="dose" aria-label="量">`;
+  const area = `<select data-f="area" aria-label="使う場所">${opts(AREAS)}</select>`;
+  if (form === "錠剤") return `<select data-f="dose" aria-label="用量">${opts(["1回1錠","1回半錠","1回2錠"], "用量を選択")}</select>`;
+  if (form === "カプセル") return `<select data-f="dose" aria-label="用量">${opts(["1回1カプセル","1回2カプセル"], "用量を選択")}</select>`;
+  if (form === "粉薬") return `<select data-f="dose" aria-label="用量">${opts(["1回1袋","1回半袋","1回2袋"], "用量を選択")}</select>`;
+  if (form === "シロップ") return `1回${num}ml`;
+  if (form === "点眼・点耳・点鼻") return `1回${num}滴${area}`;
+  if (form === "スプレー") return `1回${num}噴霧${area}`;
+  if (form === "その他") return `<input type="text" data-f="dose" placeholder="用量を入力" aria-label="用量">`;
+  return "";
+}
 
-      <div class="mb-2">
-        <label class="form-label">※</label>
-        <select class="form-control med-note">
-          <option value="">選択してください</option>
-          <option>熱が37.5度以上がある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
-          <option>患部のところにお使い下さい。</option>
-          <option>体の痛みがある場合だけお飲みください。続けてむ場合は6時間程お空け下さい。</option>
-          <option>患部の痛みがある場合だけお飲みください。続けてむ場合は6時間程お空け下さい。</option>
-          <option>頭痛がある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
-          <option>熱が37.5度以上や体の痛みや頭痛がある場合お飲みください。続けて飲む場合は6時間程お空け下さい。</option>
-          <option>患部の痛みがある場合だけお飲みください。続けて飲む場合は6時間程お空け下さい。</option>
-          <option>お水を混ぜて飲み始めてください。</option>
-          <option>Suspension Syrup薬の作り方手順：数回たたいて粉末をほぐし、沸騰させて冷やした水を加え、線まで水を加えて、ボトルを閉める。　ボトルを閉めて良く振り、均一にする。</option>
-          <option>患部の所だけにお塗りください。</option>
-        </select>
-      </div>
+function timeOptions(row) {
+  const list = FREQ[$('[data-f=freq]', row).value] || [];
+  const sel = $('[data-f=time]', row);
+  sel.innerHTML = opts(list, "服用タイミング");
+  sel.disabled = !list.length;
+}
 
-      <div class="mb-2"><textarea class="form-control med-memo" rows="2" placeholder="メモ"></textarea></div>
-      <button class="btn btn-danger btn-sm btn-remove no-print">× 削除</button>
-      <button class="btn btn-info btn-sm btn-duplicate no-print">コピー</button>
-    `;
+function addRow(d = {}) {
+  const row = document.createElement("section");
+  row.className = "med";
+  row.innerHTML = `
+    <div class="head"><strong class="num"></strong>
+      <label class="prn"><input type="checkbox" data-f="prn">頓服用（必要なときだけ）</label></div>
+    <input type="text" data-f="name" list="drugs" placeholder="薬の名前" aria-label="薬の名前" autocomplete="off">
+    <div class="err" hidden>薬の名前を入力してください。</div>
+    <div class="grid">
+      <div><select data-f="type" aria-label="薬の種類">${opts(TYPES, "薬の種類")}</select>
+        <input type="text" data-f="typeOther" placeholder="種類を入力" aria-label="薬の種類（自由入力）" hidden style="margin-top:6px"></div>
+      <select data-f="form" aria-label="薬の形状">${opts(FORMS, "薬の形状")}</select>
+    </div>
+    <div class="one">
+      <div class="dose"></div>
+      <select data-f="freq" aria-label="1日の回数">${opts(Object.keys(FREQ), "1日の回数")}</select>
+      <select data-f="time" aria-label="服用タイミング" disabled><option value="">服用タイミング</option></select>
+    </div>
+    <div class="one">
+      <select data-f="food" aria-label="食前・食後">${opts(FOOD, "食前/食後")}</select>
+      <input type="number" min="1" inputmode="numeric" data-f="durN" placeholder="期間の数" aria-label="期間の数">
+      <select data-f="durT" aria-label="期間の単位">${opts(["日間","週間","ヶ月間"], "単位")}</select>
+    </div>
+    <div class="notewrap"><select data-f="note" aria-label="注意書き">${opts(notes, "注意書きを選択")}</select><button type="button" data-act="notes">注意書きを編集</button></div>
+    <textarea data-f="memo" rows="2" placeholder="メモ" aria-label="メモ" style="margin-top:8px"></textarea>
+    <div class="acts"><button type="button" data-act="dup">複製</button><button type="button" class="del" data-act="del">削除</button></div>`;
+  meds.append(row);
+  setData(row, d);
+  renumber();
+  return row;
+}
 
-    document.getElementById('medications').appendChild(medDiv);
+function getData(row) {
+  const o = {};
+  row.querySelectorAll("[data-f]").forEach(el => o[el.dataset.f] = el.type === "checkbox" ? el.checked : el.value.trim());
+  return o;
+}
 
-    const doseContainer = medDiv.querySelector('#dose-container');
-    const formSelect = medDiv.querySelector('.med-form');
-    const typeSelect = medDiv.querySelector('.med-type');
-    const typeOtherInput = medDiv.querySelector('.med-type-other');
-    const freqSelect = medDiv.querySelector('.frequency-select');
-    const timeSelect = medDiv.querySelector('.time-detail-select');
+function setData(row, d) {
+  const ns = $("[data-f=note]", row);
+  if (d.note && ![...ns.options].some(o => o.value === d.note)) ns.add(new Option(d.note, d.note));
+  const set = (f, v) => { const el = $(`[data-f=${f}]`, row); if (el && v !== undefined) el.type === "checkbox" ? el.checked = !!v : el.value = v; };
+  set("form", d.form); $(".dose", row).innerHTML = doseHTML(d.form);
+  set("freq", d.freq); timeOptions(row);
+  for (const k in d) set(k, d[k]);
+  $("[data-f=typeOther]", row).hidden = $("[data-f=type]", row).value !== "その他";
+}
 
-    formSelect.addEventListener('change', () => updateDoseFields(formSelect, doseContainer));
-    typeSelect.addEventListener('change', () => {
-      if (typeSelect.value === "その他") {
-        typeOtherInput.style.display = "block";
-      } else {
-        typeOtherInput.style.display = "none";
-        typeOtherInput.value = "";
-      }
-    });
+function renumber() {
+  meds.querySelectorAll(".num").forEach((el, i) => el.textContent = (i + 1) + ".");
+}
 
-    freqSelect.addEventListener('change', () => {
-      const options = frequencyOptions[freqSelect.value] || [];
-      timeSelect.innerHTML = "";
-      if (options.length) {
-        timeSelect.disabled = false;
-        options.forEach(opt => {
-          const o = document.createElement('option');
-          o.text = opt; timeSelect.add(o);
-        });
-      } else {
-        timeSelect.disabled = true;
-        timeSelect.innerHTML = "<option>服用タイミング</option>";
-      }
-    });
+function doseText(d) {
+  if (!d.dose) return "";
+  const base = {"シロップ": `1回${d.dose}ml`, "点眼・点耳・点鼻": `1回${d.dose}滴`, "スプレー": `1回${d.dose}噴霧`}[d.form] || d.dose;
+  return d.area ? `${base}（${d.area}）` : base;
+}
 
-    medDiv.querySelector('.btn-remove').addEventListener('click', () => {
-      medDiv.remove(); renumberMeds();
-    });
-    medDiv.querySelector('.btn-duplicate').addEventListener('click', () => duplicateMedicine(medDiv));
+function lines(d) {
+  const type = d.type === "その他" && d.typeOther ? d.typeOther : d.type;
+  const parts = [];
+  if (d.prn) parts.push("頓服用（必要なときだけ）");
+  [doseText(d), d.freq, d.time, d.food, d.durN && d.durT ? d.durN + d.durT : ""].forEach(p => p && parts.push(p));
+  return { name: d.name, type, when: parts.join("・"), note: d.note, memo: d.memo };
+}
 
-    if (copyData) {
-      medDiv.querySelector('.med-name').value = copyData.name || "";
-      medDiv.querySelector('.med-type').value = copyData.type || "";
-      medDiv.querySelector('.med-type').dispatchEvent(new Event('change'));
-      if (copyData.type === "その他") medDiv.querySelector('.med-type-other').value = copyData.typeOther || "";
-      medDiv.querySelector('.med-prn').checked = !!copyData.prn;
-      formSelect.value = copyData.form || "";
-      formSelect.dispatchEvent(new Event('change'));
-      const doseEl = medDiv.querySelector('.med-dose');
-      if (doseEl) {
-        doseEl.value = copyData.doseOther ?? copyData.dose ?? "";
-      }
-      const areaEl = medDiv.querySelector('.med-dose-area');
-      if (areaEl) areaEl.value = copyData.area || "";
-      medDiv.querySelector('.frequency-select').value = copyData.freq || "";
-      medDiv.querySelector('.frequency-select').dispatchEvent(new Event('change'));
-      medDiv.querySelector('.time-detail-select').value = copyData.time || "";
-      medDiv.querySelector('.med-foodtiming').value = copyData.foodTiming || "";
-      medDiv.querySelector('.med-duration-num').value = copyData.durationNum || "";
-      medDiv.querySelector('.med-duration-type').value = copyData.durationType || "";
-      medDiv.querySelector('.med-note').value = copyData.note || "";
-      medDiv.querySelector('.med-memo').value = copyData.memo || "";
-    }
+function items() {
+  return [...meds.children].map(getData).filter(d => d.name).map(lines);
+}
 
-    const medNameInput = medDiv.querySelector('.med-name');
-    medNameInput.addEventListener("change", () => {
-      const val = medNameInput.value.trim();
-      if (val && !medicineNames.has(val)) {
-        medicineNames.add(val); updateMedicineList();
-      }
-    });
-  }
-
-  function updateDoseFields(formSelect, doseContainer) {
-    doseContainer.innerHTML = '';
-    if (formSelect.value === 'tablet') {
-      doseContainer.innerHTML = `<select class="form-control med-dose"><option value="">用量を選択</option><option>1回1錠</option><option>1回半錠</option><option>1回2錠</option></select>`;
-    } else if (formSelect.value === 'syrup') {
-      doseContainer.innerHTML = `<div class="input-group"><span class="input-group-text">1回</span><input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric"><span class="input-group-text">ml</span></div>`;
-    } else if (formSelect.value === 'drops' || formSelect.value === 'spray') {
-      const label = formSelect.value === 'drops' ? 'ドロップ' : 'スプレー';
-      doseContainer.innerHTML = `
-        <div class="input-group mb-1">
-          <span class="input-group-text">1回</span>
-          <input type="number" class="form-control med-dose" placeholder="量" inputmode="numeric">
-          <span class="input-group-text">${label}</span>
-        </div>
-        <select class="form-control med-dose-area">
-          <option>両目</option><option>左目</option><option>右目</option>
-          <option>両耳</option><option>左耳</option><option>右耳</option>
-          <option>両鼻</option><option>左鼻</option><option>右鼻</option>
-        </select>`;
-    } else if (formSelect.value === 'other') {
-      doseContainer.innerHTML = `<input type="text" class="form-control med-dose" placeholder="用量を入力してください">`;
-    } else {
-      doseContainer.innerHTML = '';
-    }
-  }
-
-  function duplicateMedicine(medDiv) {
-    const data = {
-      name: medDiv.querySelector('.med-name').value,
-      type: medDiv.querySelector('.med-type').value,
-      typeOther: medDiv.querySelector('.med-type-other')?.value || "",
-      prn: medDiv.querySelector('.med-prn').checked,
-      form: medDiv.querySelector('.med-form').value,
-      dose: medDiv.querySelector('.med-dose')?.value || "",
-      doseOther: medDiv.querySelector('.med-dose')?.value || "",
-      area: medDiv.querySelector('.med-dose-area')?.value || "",
-      freq: medDiv.querySelector('.frequency-select').value,
-      time: medDiv.querySelector('.time-detail-select').value,
-      foodTiming: medDiv.querySelector('.med-foodtiming').value,
-      durationNum: medDiv.querySelector('.med-duration-num').value,
-      durationType: medDiv.querySelector('.med-duration-type').value,
-      note: medDiv.querySelector('.med-note').value,
-      memo: medDiv.querySelector('.med-memo').value
-    };
-    createMedicineRow(data);
-  }
-
-  function renumberMeds() {
-    const numbers = document.querySelectorAll('.medication-number');
-    numbers.forEach((el, i) => el.textContent = (i + 1) + '.');
-    medCounter = numbers.length;
-  }
-
-  function validateMeds() {
-    let allValid = true;
-    document.querySelectorAll('.medication').forEach(med => {
-      med.classList.remove('incomplete');
-      const prn = med.querySelector('.med-prn')?.checked;
-      const nameVal = med.querySelector('.med-name')?.value.trim();
-      if (!nameVal) { med.classList.add('incomplete'); allValid = false; return; }
-      if (prn) return;
-    });
-    return allValid;
-  }
+const GREET = "平素よりお世話になっております。";
+const HEAD = "本日、処方されたお薬の飲み方・使い方は下記でございます。";
+const FOOT = "ご確認よろしくお願いいたします。";
 
 function buildText() {
-  let text = "平素よりお世話になっております。\n\n本日、処方されたお薬の飲み方・使い方は下記でございます。\n\n";
-    document.querySelectorAll('.medication').forEach((med, idx) => {
-      const name = med.querySelector('.med-name').value.trim();
-      if (!name) return;
+  const body = items().map((it, i) =>
+    [`${i + 1}. ${it.name}`, it.type, it.when, it.note && "※ " + it.note, it.memo && "メモ: " + it.memo].filter(Boolean).join("\n")
+  ).join("\n\n");
+  return `${GREET}\n\n${HEAD}\n\n${body}\n\n${FOOT}`;
+}
 
-      let type = med.querySelector('.med-type').value.trim();
-      const typeOtherEl = med.querySelector('.med-type-other');
-      const typeOther = typeOtherEl ? typeOtherEl.value.trim() : "";
-      if (type === "その他" && typeOther) {
-        type = typeOther;
-      }
+let custom = false;
+const prev = $("#prevText");
+function syncCustom() {
+  $("#customNote").hidden = $("#resetText").hidden = !custom;
+}
+function refresh() {
+  if (!custom) prev.value = items().length ? buildText() : "";
+  try {
+    localStorage.setItem(KEY, JSON.stringify([...meds.children].map(getData)));
+    custom ? localStorage.setItem(KEY + ":text", prev.value) : localStorage.removeItem(KEY + ":text");
+  } catch (e) {}
+}
+prev.addEventListener("input", () => { custom = true; syncCustom(); refresh(); });
+$("#resetText").onclick = () => {
+  if (!confirm("編集した内容は消え、入力内容から作り直します。よろしいですか？")) return;
+  custom = false; syncCustom(); refresh(); toast("作り直しました");
+};
 
-      const prn = med.querySelector('.med-prn').checked;
-      const formVal = med.querySelector('.med-form').value;
-      let dose = "";
-      let area = med.querySelector('.med-dose-area')?.value.trim() || "";
-
-      if (formVal === "syrup") {
-        const val = med.querySelector('.med-dose')?.value.trim();
-        if (val) dose = `1回${val}ml`;
-      } else if (formVal === "drops") {
-        const val = med.querySelector('.med-dose')?.value.trim();
-        if (val) dose = `1回${val}ドロップ`;
-      } else if (formVal === "spray") {
-        const val = med.querySelector('.med-dose')?.value.trim();
-        if (val) dose = `1回${val}スプレー`;
-      } else {
-        dose = med.querySelector('.med-dose')?.value.trim() || "";
-      }
-
-      if (dose && area) dose = `${dose}・${area}`;
-
-      const freq = med.querySelector('.frequency-select').value.trim();
-      const time = med.querySelector('.time-detail-select').value.trim();
-      const food = med.querySelector('.med-foodtiming').value.trim();
-      const durN = med.querySelector('.med-duration-num').value.trim();
-      const durT = med.querySelector('.med-duration-type').value.trim();
-      const note = med.querySelector('.med-note').value.trim();
-      const memo = med.querySelector('.med-memo').value.trim();
-
-      text += `${idx + 1}. ${name}\n`;
-      if (type) text += `${type}\n`;
-
-      if (prn) {
-        text += "※ 頓服用（必要時のみ服用）\n";
-        if (dose) text += `${dose}\n`;
-      } else {
-        const parts = [];
-        if (dose) parts.push(dose);
-        if (freq) parts.push(freq);
-        if (time && time !== "服用タイミング") parts.push(time);
-        if (food) parts.push(food);
-        if (durN && durT) parts.push(durN + durT);
-        if (parts.length) text += parts.join("・") + "\n";
-      }
-
-      if (note) text += "※ " + note + "\n";
-      if (memo) text += "メモ: " + memo + "\n";
-      text += "\n";
-    });
-    return text.trim();
-  }
-
-  // ✅ Copy with mobile fallback
-  function copyText() {
-    if (!validateMeds()) { alert("必須入力があります"); return; }
-    const text = buildText() + "\n\nご確認よろしくお願いいたします。";
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => alert("コピーしました！")).catch(() => fallbackCopy(text));
-    } else {
-      fallbackCopy(text);
-    }
-  }
-  function fallbackCopy(text) {
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.style.position = "fixed";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    try {
-      document.execCommand("copy");
-      alert("コピーしました！");
-    } catch (err) {
-      alert("コピーに失敗しました。手動でコピーしてください。");
-    }
-    document.body.removeChild(textarea);
-  }
-
-  // ✅ Print (works on mobile too)
-  document.getElementById("printBtn").addEventListener("click", () => {
-    if (!validateMeds()) return alert("必須入力があります");
-    const text = buildText() + "\n\nご確認よろしくお願いいたします。";
-    const htmlText = text.replace(/\n/g, "<br>");
-    const printWindow = window.open("", "", "height=600,width=800");
-    printWindow.document.write(`
-      <html><head><title>処方されたお薬の飲み方・使い方</title>
-      <style>body { font-family: 'Noto Sans JP', sans-serif; white-space: pre-wrap; }</style>
-      </head><body>${htmlText}</body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+function validate() {
+  let first = null;
+  [...meds.children].forEach(row => {
+    const bad = !$("[data-f=name]", row).value.trim();
+    row.classList.toggle("bad", bad);
+    $(".err", row).hidden = !bad;
+    if (bad && !first) first = row;
   });
+  if (first) { first.scrollIntoView({behavior: "smooth", block: "center"}); $("[data-f=name]", first).focus(); toast("薬の名前が未入力の欄があります"); }
+  return !first;
+}
 
-// --- Save as PDF (mobile & desktop safe, with footer) ---
-document.getElementById("pdfBtn").addEventListener("click", () => {
-  if (!validateMeds()) return alert("必須入力があります");
+function renderSheet() {
+  if (custom) {
+    $("#sheet").innerHTML = `<div class="free">${esc(prev.value)}</div><p class="disc">この表は参考用です。医師・薬剤師の指示が最優先です。</p>`;
+    return;
+  }
+  const date = new Date().toLocaleDateString("ja-JP", {year: "numeric", month: "long", day: "numeric"});
+  $("#sheet").innerHTML = `<p>${GREET}</p><h1>${HEAD}</h1><p>${date}</p>` + items().map((it, i) => `
+    <div class="item"><div class="nm">${i + 1}. ${esc(it.name)}${it.type ? `（${esc(it.type)}）` : ""}</div>
+    <div class="when">${esc(it.when)}</div>
+    ${it.note ? `<div>※ ${esc(it.note)}</div>` : ""}${it.memo ? `<div>メモ: ${esc(it.memo)}</div>` : ""}</div>`).join("") +
+    `<p class="disc">${FOOT}<br>この表は参考用です。医師・薬剤師の指示が最優先です。</p>`;
+}
 
-  const text = buildText();
+function printSheet(msg) {
+  if (!custom && !validate()) return;
+  renderSheet();
+  if (msg) toast(msg);
+  setTimeout(() => window.print(), msg ? 700 : 0);
+}
 
-  // Build wrapper
-  const wrapper = document.createElement("div");
-  wrapper.style.fontFamily = "'Noto Sans JP', sans-serif";
-  wrapper.style.width = "100%";
-  wrapper.style.padding = "20px";   // ensure footer not cut off
-  wrapper.style.boxSizing = "border-box";
+async function copy() {
+  if (!custom && !validate()) return;
+  const text = custom ? prev.value : buildText();
+  try { await navigator.clipboard.writeText(text); }
+  catch (e) {
+    const ta = Object.assign(document.createElement("textarea"), {value: text});
+    ta.style.cssText = "position:fixed;opacity:0";
+    document.body.append(ta); ta.select();
+    try { document.execCommand("copy"); } catch (_) { ta.remove(); return toast("コピーできませんでした。プレビューから手動でコピーしてください"); }
+    ta.remove();
+  }
+  toast("コピーしました");
+}
 
-  // Main text
-  const mainDiv = document.createElement("div");
-  mainDiv.innerHTML = text.replace(/\n/g, "<br>");
-  wrapper.appendChild(mainDiv);
-
-  // ✅ Footer (separate block, normal weight)
-  const footer = document.createElement("div");
-  footer.style.marginTop = "30px";
-  footer.textContent = "ご確認よろしくお願いいたします。";
-  wrapper.appendChild(footer);
-
-  // Filename with date
-  const today = new Date().toISOString().split("T")[0];
-
-  // Generate PDF
-  html2pdf().set({
-    margin: 10,
-    filename: "prescription_" + today + ".pdf",
-    html2canvas: { scale: 2, useCORS: true, logging: false },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-  }).from(wrapper).save();
+meds.addEventListener("input", e => {
+  const row = e.target.closest(".med"); if (!row) return;
+  const f = e.target.dataset.f;
+  if (f === "name" && e.target.value.trim()) { row.classList.remove("bad"); $(".err", row).hidden = true; }
+  refresh();
+});
+meds.addEventListener("change", e => {
+  const row = e.target.closest(".med"); if (!row) return;
+  const f = e.target.dataset.f;
+  if (f === "form") $(".dose", row).innerHTML = doseHTML(e.target.value);
+  if (f === "freq") timeOptions(row);
+  if (f === "type") { const o = $("[data-f=typeOther]", row); o.hidden = e.target.value !== "その他"; if (o.hidden) o.value = ""; }
+  refresh();
+});
+meds.addEventListener("click", e => {
+  const act = e.target.dataset.act, row = e.target.closest(".med"); if (!act || !row) return;
+  if (act === "notes") return openNotes();
+  if (act === "del") {
+    if (meds.children.length === 1) { row.remove(); addRow(); }
+    else row.remove();
+    renumber();
+  }
+  if (act === "dup") { const c = addRow(getData(row)); c.scrollIntoView({behavior: "smooth", block: "center"}); toast("複製しました"); }
+  refresh();
 });
 
-  // Event bindings
-  document.getElementById('copyBtn').addEventListener('click', copyText);
-  document.getElementById('addMed').addEventListener('click', () => createMedicineRow());
+const dlg = $("#notesDlg"), nl = $("#noteList");
+function noteRow(t = "") {
+  const r = document.createElement("div");
+  r.className = "nrow";
+  r.innerHTML = `<textarea rows="2" aria-label="注意書き">${esc(t)}</textarea><button type="button" class="del">削除</button>`;
+  nl.append(r);
+  return r;
+}
+function fillNotes(list) { nl.innerHTML = ""; list.forEach(noteRow); }
+function openNotes() { fillNotes(notes); dlg.showModal(); }
+nl.addEventListener("click", e => { if (e.target.classList.contains("del")) e.target.closest(".nrow").remove(); });
+$("#noteAdd").onclick = () => { const r = noteRow(); r.scrollIntoView({block: "nearest"}); $("textarea", r).focus(); };
+$("#noteReset").onclick = () => { if (confirm("注意書きを初期の内容に戻します（保存するまで反映されません）。よろしいですか？")) fillNotes(NOTES); };
+$("#noteCancel").onclick = () => dlg.close();
+$("#noteSave").onclick = () => {
+  notes = [...new Set([...nl.querySelectorAll("textarea")].map(t => t.value.replace(/[ \t\r\n]+/g, " ").trim()).filter(Boolean))];
+  try { localStorage.setItem(KEY + ":notes", JSON.stringify(notes)); } catch (e) {}
+  meds.querySelectorAll("[data-f=note]").forEach(sel => {
+    const cur = sel.value;
+    sel.innerHTML = opts(notes, "注意書きを選択");
+    if (cur && !notes.includes(cur)) sel.add(new Option(cur, cur));
+    sel.value = cur;
+  });
+  refresh(); dlg.close(); toast("注意書きを保存しました");
+};
 
-  // init
-  createMedicineRow();
+$("#add").onclick = () => { const r = addRow(); r.scrollIntoView({behavior: "smooth", block: "center"}); $("[data-f=name]", r).focus(); refresh(); };
+$("#copy").onclick = copy;
+$("#print").onclick = () => printSheet();
+$("#pdf").onclick = () => printSheet("印刷画面で「PDFに保存」を選んでください");
+$("#clear").onclick = () => {
+  if (!confirm("入力したすべての薬を消去します。よろしいですか？")) return;
+  meds.innerHTML = ""; addRow(); custom = false; syncCustom(); refresh(); toast("消去しました");
+};
+
+try { (JSON.parse(localStorage.getItem(KEY)) || []).forEach(addRow); } catch (e) {}
+if (!meds.children.length) addRow();
+try { const t = localStorage.getItem(KEY + ":text"); if (t !== null) { custom = true; prev.value = t; } } catch (e) {}
+syncCustom();
+refresh();
 </script>
-
 </body>
 </html>
-
-
-
-
-
-
